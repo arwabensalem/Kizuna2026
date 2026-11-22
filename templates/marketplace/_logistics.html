@@ -1,0 +1,25 @@
+{# Logistique export pour la destination choisie. Attend route, destinations, T. #}
+<section class="bourse-logistics" lang="{{ lang }}">
+  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <h2>{{ T.logistics }}</h2>
+    <form method="get" class="d-flex gap-2 align-items-center">
+      <label class="visually-hidden" for="bourse-dest">{{ T.destination }}</label>
+      <select class="form-select form-select-sm" id="bourse-dest" name="dest" onchange="this.form.submit()">
+        {% for code, label in destinations %}
+          <option value="{{ code }}" {% if code == route.code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+      {% for key, val in request.GET.items %}{% if key != 'dest' and key != 'lang' and key != 'cur' %}<input type="hidden" name="{{ key }}" value="{{ val }}">{% endif %}{% endfor %}
+      <noscript><button class="btn btn-sm btn-primary" type="submit">OK</button></noscript>
+    </form>
+  </div>
+  <dl class="market-facts">
+    <div><dt>{{ T.route }}</dt><dd>{{ route.flag }} {{ route.port }}</dd></div>
+    <div><dt>{{ T.transit }}</dt><dd>{{ route.days }} {{ T.days }} · {{ route.mode }}</dd></div>
+    <div><dt>{{ T.freight }}</dt><dd>≈ {{ route.freight_text }} / kg</dd></div>
+  </dl>
+  <h3 class="h6">{{ T.documents }}</h3>
+  <ul class="bourse-docs">
+    {% for doc in route.docs %}<li>{{ doc }}</li>{% endfor %}
+  </ul>
+</section>

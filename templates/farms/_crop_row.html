@@ -1,0 +1,24 @@
+<div class="kz-crop-row" data-crop-row>
+  {% for hidden in f.hidden_fields %}{{ hidden }}{% endfor %}
+  <span class="kz-crop-dot" data-crop-dot aria-hidden="true"></span>
+  <div class="kz-crop-cell kz-crop-kind">
+    <label class="form-label" for="{{ f.kind.id_for_label }}">{{ f.kind.label }}</label>{{ f.kind }}
+    {% for e in f.kind.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+  </div>
+  <div class="kz-crop-cell kz-crop-area">
+    <label class="form-label" for="{{ f.area_m2.id_for_label }}">{{ f.area_m2.label }}</label>
+    <div class="input-group">{{ f.area_m2 }}<span class="input-group-text">m²</span></div>
+    {% for e in f.area_m2.errors %}<div class="invalid-feedback d-block">{{ e }}</div>{% endfor %}
+  </div>
+  <div class="kz-crop-cell kz-crop-stage">
+    <label class="form-label" for="{{ f.stage.id_for_label }}">{{ f.stage.label }}</label>{{ f.stage }}
+  </div>
+  <div class="kz-crop-cell kz-crop-name">
+    <label class="form-label" for="{{ f.name.id_for_label }}">{{ f.name.label }}</label>{{ f.name }}
+  </div>
+  <div class="kz-crop-del">
+    {% if f.DELETE %}<span hidden>{{ f.DELETE }}</span>{% endif %}
+    <button class="btn btn-sm btn-danger-soft" type="button" data-crop-remove aria-label="Retirer cette culture"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg></button>
+  </div>
+  {% for e in f.non_field_errors %}<div class="invalid-feedback d-block w-100">{{ e }}</div>{% endfor %}
+</div>

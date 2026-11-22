@@ -1,0 +1,176 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}KIZUNA · Accueil{% endblock %}
+{% block main_class %}kz-home{% endblock %}
+
+{% block content %}
+  <section class="kz-hero">
+    <canvas id="kz-home-bg" class="kz-hero-bg" aria-hidden="true"></canvas>
+    <div class="container kz-hero-inner">
+      <img class="kz-home-logo" src="{% static 'img/kizuna-logo.png' %}" alt="" width="340" height="340" aria-hidden="true">
+      <p class="kz-eyebrow"><span class="kz-eyebrow-dot"></span>{% if user.is_authenticated %}Bonjour {{ user.first_name|default:user.username }}{% else %}Plateforme de résilience · Tunisie{% endif %}</p>
+      <h1 class="kz-hero-title">L'eau et l'énergie de votre foyer,<br><span>enfin simples à suivre.</span></h1>
+      <p class="kz-hero-lead">
+        Votre maison en 3D en 5 minutes, votre prochaine facture STEG et SONEDE
+        avant qu’elle arrive, et des conseils simples pour l’eau, le soleil et vos cultures.
+      </p>
+      <div class="kz-hero-actions">
+        {% if user.is_authenticated %}
+          <a class="btn kz-btn-light btn-lg" href="{% url 'dashboard' %}">Ouvrir mon tableau de bord <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+          <a class="btn kz-btn-ghost btn-lg" href="{% url 'demo' %}?play=1"><svg class="kz-i" aria-hidden="true"><use href="#i-play"></use></svg> Voir la démonstration</a>
+        {% else %}
+          <a class="btn kz-btn-light btn-lg" href="{% url 'accounts:register' %}">Créer mon compte <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+          <a class="btn kz-btn-ghost btn-lg" href="{% url 'accounts:login' %}"><svg class="kz-i" aria-hidden="true"><use href="#i-login"></use></svg> Me connecter</a>
+        {% endif %}
+      </div>
+      {% if not user.is_authenticated %}
+        <p class="kz-hero-note">Envie de découvrir d'abord ? <a href="{% url 'demo' %}?play=1">Voir la démonstration</a>, sans compte.</p>
+      {% endif %}
+      <ul class="kz-legend" aria-label="Légende de l'animation">
+        <li><span class="kz-dot kz-dot-water"></span>Eau</li>
+        <li><span class="kz-dot kz-dot-energy"></span>Énergie</li>
+        <li><span class="kz-dot kz-dot-food"></span>Récoltes</li>
+      </ul>
+    </div>
+  </section>
+
+  <section class="kz-values">
+    <div class="container">
+      <div class="kz-values-grid">
+        <div class="kz-value">
+          <span class="kz-value-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-cube"></use></svg></span>
+          <div><h2>Jumeau vivant</h2><p>Chaque pièce, chaque appareil et le coût en dinars, au même endroit.</p></div>
+        </div>
+        <div class="kz-value">
+          <span class="kz-value-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-bell"></use></svg></span>
+          <div><h2>Facture prédite</h2><p>STEG et SONEDE estimées, avec une alerte avant la tranche plus chère.</p></div>
+        </div>
+        <div class="kz-value">
+          <span class="kz-value-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sun"></use></svg></span>
+          <div><h2>Solaire intelligent</h2><p>« Lancez la machine maintenant, vos panneaux produisent. »</p></div>
+        </div>
+        <div class="kz-value">
+          <span class="kz-value-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg></span>
+          <div><h2>Ferme et export</h2><p>Quand arroser, combien, et vendre en direct à l’étranger avec vos données.</p></div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="container kz-home-body">
+    {% if user.is_authenticated %}
+      <section aria-labelledby="kz-todo">
+        <div class="kz-section-head">
+          <h2 id="kz-todo">Accès rapide</h2>
+          <p>Choisissez ce que vous voulez faire.</p>
+        </div>
+        <div class="kz-tiles">
+          <a class="kz-tile" href="{% url 'dashboard' %}">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-chart"></use></svg></span>
+            <span class="kz-tile-title">Mon tableau de bord</span>
+            <span class="kz-tile-text">L'essentiel de la journée en un coup d'œil.</span>
+            <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+          </a>
+          {% if sees_farm %}
+            <a class="kz-tile" href="{% url 'farms:advice_first' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-drop"></use></svg></span>
+              <span class="kz-tile-title">Quand arroser ?</span>
+              <span class="kz-tile-text">Le bon moment, le volume en m³ et la durée de pompage par parcelle.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="kz-tile" href="{% url 'farms:list' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg></span>
+              <span class="kz-tile-title">Ma ferme</span>
+              <span class="kz-tile-text">Cultures, irrigation, réservoirs et panneaux solaires.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="kz-tile" href="{% url 'market:board' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-exchange"></use></svg></span>
+              <span class="kz-tile-title">Vendre et échanger</span>
+              <span class="kz-tile-text">Proposer vos récoltes et trouver des acheteurs.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+          {% endif %}
+          {% if not sees_farm and not sees_business or sees_platform %}
+            <a class="kz-tile" href="{% url 'homes:list' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-door"></use></svg></span>
+              <span class="kz-tile-title">Ma maison</span>
+              <span class="kz-tile-text">Pièces, appareils, eau et électricité.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="kz-tile" href="{% url 'homes:bills' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-bell"></use></svg></span>
+              <span class="kz-tile-title">Factures et conseils</span>
+              <span class="kz-tile-text">Prochaine facture STEG et SONEDE, alertes fuite, frigo et clim.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="kz-tile" href="{% url 'twin:board' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-cube"></use></svg></span>
+              <span class="kz-tile-title">Ma maison en 3D</span>
+              <span class="kz-tile-text">Visitez votre maison et voyez ce qui consomme.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+            <a class="kz-tile" href="{% url 'weather:board' %}">
+              <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sun"></use></svg></span>
+              <span class="kz-tile-title">Météo et conseils</span>
+              <span class="kz-tile-text">Préparez votre maison avant la chaleur ou la pluie.</span>
+              <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+            </a>
+          {% endif %}
+          <a class="kz-tile" href="{% url 'actuators:board' %}">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-cpu"></use></svg></span>
+            <span class="kz-tile-title">Pilote automatique</span>
+            <span class="kz-tile-text">Laissez KIZUNA allumer et éteindre au bon moment.</span>
+            <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+          </a>
+          <a class="kz-tile" href="{% url 'accounts:profile' %}">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-settings"></use></svg></span>
+            <span class="kz-tile-title">Mes réglages</span>
+            <span class="kz-tile-text">Mon nom, mon e-mail et mon mot de passe.</span>
+            <span class="kz-tile-go">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+          </a>
+        </div>
+      </section>
+    {% else %}
+      <section aria-labelledby="kz-how">
+        <div class="kz-section-head">
+          <h2 id="kz-how">Comment ça marche</h2>
+          <p>Trois étapes, quelques minutes.</p>
+        </div>
+        <ol class="kz-steps">
+          <li><span class="kz-step-n">1</span><h3>Créez votre compte</h3><p>Choisissez votre profil : votre compte est actif tout de suite.</p></li>
+          <li><span class="kz-step-n">2</span><h3>Décrivez votre lieu</h3><p>Appartement, villa ou maison à patio, ou votre ferme : environ 5 minutes.</p></li>
+          <li><span class="kz-step-n">3</span><h3>Laissez-vous guider</h3><p>Factures prédites, alertes et conseils d’arrosage, chaque jour.</p></li>
+        </ol>
+      </section>
+      <section class="mt-5" aria-labelledby="kz-who">
+        <div class="kz-section-head">
+          <h2 id="kz-who">Pour qui ?</h2>
+          <p>Un même outil, trois façons de l’utiliser.</p>
+        </div>
+        <div class="kz-tiles">
+          <div class="kz-tile">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-door"></use></svg></span>
+            <span class="kz-tile-title">Citoyens</span>
+            <span class="kz-tile-text">Maison en 3D, coût en dinars, fuite détectée la nuit, frigo ou clim qui consomment trop, prochaine facture STEG et SONEDE.</span>
+          </div>
+          <div class="kz-tile">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg></span>
+            <span class="kz-tile-title">Agriculteurs</span>
+            <span class="kz-tile-text">Capteurs facultatifs, quand et combien arroser, date de récolte et prix du marché local.</span>
+          </div>
+          <div class="kz-tile">
+            <span class="kz-tile-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-exchange"></use></svg></span>
+            <span class="kz-tile-title">Acheteurs à l’étranger</span>
+            <span class="kz-tile-text">Origine exacte, irrigation et date de récolte : les données de la ferme prouvent la qualité.</span>
+          </div>
+        </div>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="{% static 'js/hero3d.js' %}?v=1"></script>
+{% endblock %}

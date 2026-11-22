@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static kizuna_fr %}
+
+{% block title %}Ma ferme · KIZUNA{% endblock %}
+{% block main_class %}kz-farm-page{% endblock %}
+
+{% block content %}
+<header class="kz-page-hero">
+  <div class="container kz-page-hero-inner">
+    <p class="kz-eyebrow"><span class="kz-eyebrow-dot"></span>Bonjour {{ user.first_name|default:user.username }}</p>
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-3">
+      <div>
+        <h1 class="kz-page-title">Mes fermes</h1>
+        <p class="kz-page-lead mb-0">Vos parcelles, leurs cultures et leur position en Tunisie.</p>
+      </div>
+      <a class="btn kz-btn-light btn-lg" href="{% url 'farms:create' %}">+ Ajouter une ferme</a>
+    </div>
+  </div>
+</header>
+
+<div class="container py-4 py-lg-5">
+  {% if farms %}
+  <div class="kz-farm-grid">
+    {% for farm in farms %}
+      <a class="kz-farm-card" href="{% url 'farms:detail' farm.pk %}">
+        <div class="kz-farm-card-top">
+          <span class="kz-farm-badge"><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg></span>
+          <span class="kz-farm-area">{{ farm.area_m2|floatformat:"0g" }} m²</span>
+        </div>
+        <h2>{{ farm.name }}</h2>
+        <p class="kz-farm-place"><svg class="kz-i" aria-hidden="true"><use href="#i-map"></use></svg>{{ farm.location|default:"Lieu non précisé" }}</p>
+        {% with crops=farm.crops.all %}
+          {% if crops %}
+            <ul class="kz-crop-tags">{% for crop in crops %}<li><span class="kz-crop-dot kz-crop-{{ crop.kind }}"></span>{{ crop.get_kind_display|fr_choice }} · {{ crop.area_m2|floatformat:"0g" }} m²</li>{% endfor %}</ul>
+          {% else %}
+            <ul class="kz-crop-tags"><li><span class="kz-crop-dot kz-crop-{{ farm.crop_type }}"></span>{{ farm.get_crop_type_display|fr_choice }}</li></ul>
+          {% endif %}
+        {% endwith %}
+        <span class="kz-farm-go">Ouvrir la ferme <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></span>
+      </a>
+    {% endfor %}
+  </div>
+  {% else %}
+    <section class="kz-card kz-empty-hero">
+      <span class="kz-farm-badge kz-farm-badge-lg"><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg></span>
+      <h2>Vous n'avez pas encore ajouté de ferme</h2>
+      <p>Placez-la sur la carte de la Tunisie, ajoutez vos cultures avec leur surface, et recevez vos conseils d’arrosage.</p>
+      <a class="btn btn-primary btn-lg" href="{% url 'farms:create' %}">+ Ajouter ma ferme</a>
+    </section>
+  {% endif %}
+</div>
+{% endblock %}

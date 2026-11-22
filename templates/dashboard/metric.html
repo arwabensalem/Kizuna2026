@@ -1,0 +1,12 @@
+<div class="col-md-6 col-xl-4">
+  <section class="placeholder-card">
+    {% if viz %}<canvas class="metric-3d" data-metric3d="{{ viz }}" data-value="{{ value }}" aria-hidden="true" hidden></canvas>{% endif %}
+    <h2 class="mb-2">{{ label }}</h2>
+    <p class="metric-value mb-2">{{ value }} <span>{{ unit }}</span></p>
+    {% if show_meter %}
+      <div class="meter" data-meter="{{ meter }}">
+        <div class="meter-bar"></div>
+      </div>
+    {% endif %}
+  </section>
+</div>

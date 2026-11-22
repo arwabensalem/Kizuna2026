@@ -1,0 +1,35 @@
+{# Comparaison chaîne classique / vente directe. Attend chain, direct, T. #}
+<section class="bourse-chain" lang="{{ lang }}">
+  <h2>{{ T.chain_title }}</h2>
+  <p class="bourse-note">{{ T.chain_note }}</p>
+  <div class="bourse-chain-grid">
+    <div class="bourse-chain-col is-classic">
+      <h3>{{ T.chain_classic }}</h3>
+      <ul>
+        {% for step in chain %}
+          <li>
+            <span class="bourse-step-name">{{ step.label }}</span>
+            <span class="bourse-step-bar"><span class="{% if step.key == 'farmer' %}is-farmer{% else %}is-middle{% endif %}" style="width:{{ step.width }}%"></span></span>
+            <span class="bourse-step-val">{{ step.share }} %</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="bourse-total">{{ T.shelf_price }} : <strong>{{ direct.shelf_text }}</strong></p>
+      <p class="bourse-alert">× {{ direct.multiplier_text }} {{ T.times }} · {{ T.farmer_share_label }} : <strong>{{ direct.traditional_share }} %</strong></p>
+    </div>
+    <div class="bourse-chain-col is-direct">
+      <h3>{{ T.chain_direct }}</h3>
+      <ul>
+        {% for step in direct.rows %}
+          <li>
+            <span class="bourse-step-name">{{ step.label }}</span>
+            <span class="bourse-step-bar"><span class="{% if step.key == 'farmer' %}is-farmer{% else %}is-cost{% endif %}" style="width:{{ step.width }}%"></span></span>
+            <span class="bourse-step-val">{{ step.share }} %</span>
+          </li>
+        {% endfor %}
+      </ul>
+      <p class="bourse-total">{{ T.landed_price }} : <strong>{{ direct.landed_text }}</strong></p>
+      <p class="bourse-win">{{ T.farmer_share_label }} : <strong>{{ direct.farmer_share }} %</strong></p>
+    </div>
+  </div>
+</section>

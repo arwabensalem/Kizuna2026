@@ -1,0 +1,63 @@
+{% load static %}
+<p class="kicker">Citizen</p>
+<h1>Dashboard</h1>
+<p class="lead">Signed in as {{ user.username }}. Consumption, solar, battery, tank, and the resilience score below are simulated from the home configuration.</p>
+
+{% if homes %}
+  <form class="mb-4" method="get" action="{% url 'dashboard' %}">
+    <label class="form-label" for="home-switch">Home</label>
+    <div class="d-flex gap-2 flex-wrap">
+      <select class="form-select home-switch" id="home-switch" name="home">
+        {% for home in homes %}
+          <option value="{{ home.pk }}" {% if selected_home.pk == home.pk %}selected{% endif %}>{{ home.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-primary" type="submit">Show</button>
+    </div>
+  </form>
+  <div class="row g-3">
+    {% include "dashboard/metric.html" with label="Water consumption" value=snapshot.water_liters_per_hour unit="L/h" %}
+    {% include "dashboard/metric.html" with label="Energy consumption" value=snapshot.energy_watts unit="W" %}
+    {% include "dashboard/metric.html" with label="Solar production" value=snapshot.solar_watts unit="W" %}
+    {% include "dashboard/metric.html" with label="Battery" value=snapshot.battery_percent unit="%" show_meter="yes" meter=snapshot.battery_percent %}
+    {% include "dashboard/metric.html" with label="Tank level" value=snapshot.tank_percent unit="%" show_meter="yes" meter=snapshot.tank_percent %}
+    {% include "dashboard/metric.html" with label="Current resilience score" value=snapshot.resilience_score unit="/ 100" show_meter="yes" meter=snapshot.resilience_score %}
+  </div>
+  <section class="placeholder-card mt-3">
+    <h2>Active appliances <span class="sim-flag">Simulated load</span></h2>
+    <p>{{ snapshot.active_count }} appliance{{ snapshot.active_count|pluralize }} currently on.</p>
+    {% if snapshot.active_appliances %}
+      <ul class="mb-0">
+        {% for item in snapshot.active_appliances %}
+          <li>{{ item.name }}{% if item.room %} · {{ item.room }}{% endif %} · {{ item.power_watts }} W{% if item.water_liters_per_hour %} · {{ item.water_liters_per_hour }} L/h{% endif %}</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mb-0">No appliances are active.</p>
+    {% endif %}
+    <p class="mt-3 mb-0">
+      <a href="{% url 'homes:detail' selected_home.pk %}">Configure {{ selected_home.name }}</a>
+      · <a href="{% url 'homes:anomalies' selected_home.pk %}">Anomaly check</a>
+      {% if open_alerts %}· {{ open_alerts }} open alert{{ open_alerts|pluralize }}{% endif %}
+    </p>
+  </section>
+{% else %}
+  <section class="placeholder-card">
+    <h2>No home yet</h2>
+    <p>Add a home to see simulated water, energy, solar, battery, tank level, and a resilience score.</p>
+    <a class="btn btn-primary" href="{% url 'homes:create' %}">Add a home</a>
+  </section>
+{% endif %}
+
+<h2 class="mt-5">Also available</h2>
+<div class="row g-3">
+  {% for section in sections %}
+    <div class="col-md-6 col-lg-3">
+      <section class="placeholder-card">
+        <h2>{{ section.label }}</h2>
+        <p>{{ section.text }}</p>
+        <a href="{{ section.url }}">Open</a>
+      </section>
+    </div>
+  {% endfor %}
+</div>

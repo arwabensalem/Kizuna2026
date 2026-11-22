@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}Utilisateurs · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+    <div>
+      <p class="kicker mb-1">Administration</p>
+      <h1 class="mb-1">Gestion des utilisateurs</h1>
+      <p class="lead mb-0">L'administrateur crée les comptes des agriculteurs et des acheteurs étrangers, change les rôles et suspend un compte si besoin.</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-primary" href="{% url 'accounts:user_create' %}?role=farmer">+ Agriculteur</a>
+      <a class="btn btn-primary" href="{% url 'accounts:user_create' %}?role=business">+ Acheteur</a>
+      <a class="btn btn-outline-primary" href="{% url 'accounts:user_create' %}">+ Autre compte</a>
+    </div>
+  </div>
+
+  <nav class="users-tabs mt-4" aria-label="Filtrer par rôle">
+    {% for tab in tabs %}
+      <a class="users-tab {% if tab.code == role %}is-active{% endif %}" href="?role={{ tab.code }}{% if q %}&q={{ q|urlencode }}{% endif %}">{{ tab.label }} <span>{{ tab.count }}</span></a>
+    {% endfor %}
+  </nav>
+
+  <form class="market-filters mt-3" method="get">
+    <input type="hidden" name="role" value="{{ role }}">
+    <label class="flex-grow-1">
+      <span class="form-label d-block">Rechercher</span>
+      <input class="form-control" type="search" name="q" value="{{ q }}" placeholder="Nom, identifiant, e-mail ou téléphone">
+    </label>
+    <button class="btn btn-outline-primary align-self-end" type="submit">Chercher</button>
+  </form>
+  {% if inactive %}<p class="bourse-note mt-2">{{ inactive }} compte{{ inactive|pluralize }} suspendu{{ inactive|pluralize }}.</p>{% endif %}
+
+  {% if rows %}
+    <div class="table-responsive league-board mt-3">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr><th>Personne</th><th>Rôle</th><th>Contact</th><th>Inscrit le</th><th>État</th><th></th></tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% with u=row.user %}
+            <tr {% if not u.is_active %}class="text-muted"{% endif %}>
+              <td><strong>{{ u.get_full_name|default:u.username }}</strong><br><small class="text-muted">@{{ u.username }}</small></td>
+              <td><span class="users-role is-{{ u.role }}">{{ row.role_label }}</span></td>
+              <td>
+                {% if u.email %}{{ u.email }}<br>{% endif %}
+                {% if u.phone %}{{ u.phone }}{% endif %}
+                {% if not u.email and not u.phone %}—{% endif %}
+              </td>
+              <td>{{ u.date_joined|date:"j M Y" }}</td>
+              <td>{% if u.is_active %}<span class="bourse-status is-accepted">Actif</span>{% else %}<span class="bourse-status is-declined">Suspendu</span>{% endif %}</td>
+              <td class="text-end text-nowrap">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'accounts:user_edit' u.pk %}">Modifier</a>
+                {% if u.pk != request.user.pk %}
+                  <form class="d-inline" method="post" action="{% url 'accounts:user_toggle' u.pk %}"{% if u.is_active %} data-confirm="Suspendre le compte « {{ u.username }} » ? La personne ne pourra plus se connecter, ses offres restent visibles."{% endif %}>
+                    {% csrf_token %}
+                    <button class="btn btn-sm {% if u.is_active %}btn-outline-danger{% else %}btn-outline-success{% endif %}" type="submit">{% if u.is_active %}Suspendre{% else %}Réactiver{% endif %}</button>
+                  </form>
+                {% endif %}
+              </td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="mt-3">Aucun compte ne correspond.</p>
+  {% endif %}
+{% endblock %}

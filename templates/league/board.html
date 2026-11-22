@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}Resilience League · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Resilience League</p>
+  <h1>Improvement, not consumption</h1>
+  <p class="lead">Each row is compared with its own earlier hours. A place that uses more can still rank higher if it improved more. Rows with no earlier reading stay off the ranking.</p>
+  <p class="network-label" role="note">{{ label }}</p>
+  <p class="passport-period">{{ period }}</p>
+
+  <div class="league-filters" role="group" aria-label="Filter the league">
+    {% for value, name in filters %}
+      <a class="league-filter{% if kind == value %} active{% endif %}" href="{% url 'league:board' %}{% if value %}?kind={{ value }}{% endif %}">{{ name }}</a>
+    {% endfor %}
+  </div>
+
+  <div class="table-responsive league-board">
+    <table class="table align-middle mb-0">
+      <thead>
+        <tr>
+          <th>Rank</th>
+          <th>Name</th>
+          <th>Baseline</th>
+          <th>Current</th>
+          <th>Improvement</th>
+          <th>Resilience</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in rows %}
+          <tr>
+            <td class="league-rank">{% if row.rank %}{{ row.rank }}{% else %}—{% endif %}</td>
+            <td>
+              <strong>{{ row.name }}</strong>
+              <span class="league-meta">{{ row.kind }} · {{ row.place }}</span>
+            </td>
+            <td>{% if row.baseline is None %}—{% else %}{{ row.baseline }}{% endif %}</td>
+            <td>{% if row.current is None %}—{% else %}{{ row.current }}{% endif %}</td>
+            <td>
+              {% if row.improvement is None %}
+                <span class="league-flat">—</span>
+              {% elif row.improvement > 0 %}
+                <span class="league-up">+{{ row.improvement }}%</span>
+              {% elif row.improvement < 0 %}
+                <span class="league-down">{{ row.improvement }}%</span>
+              {% else %}
+                <span class="league-flat">0%</span>
+              {% endif %}
+            </td>
+            <td>{% if row.resilience is None %}—{% else %}{{ row.resilience }}{% endif %}</td>
+          </tr>
+        {% empty %}
+          <tr>
+            <td colspan="6">Nothing in this filter yet.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+{% endblock %}

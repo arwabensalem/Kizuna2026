@@ -1,0 +1,95 @@
+<p class="mb-3"><span class="sim-flag">Simulated</span> Hour {{ brain.hour }} · {{ brain.scenario }} · {{ brain.label }}</p>
+
+<section class="brain-status brain-status-{{ brain.status.level }} mb-4" id="brain-status">
+  <p class="kicker mb-1">System status</p>
+  <p class="brain-status-text mb-1">{{ brain.status.text }}</p>
+  <p class="mb-0">{{ brain.status.detail }}</p>
+</section>
+
+<div class="row g-3 mb-4">
+  <div class="col-lg-4">
+    <section class="placeholder-card" id="brain-current">
+      <h2>Current situation</h2>
+      <dl class="brain-list mb-0">
+        {% for line in brain.current %}
+          <div>
+            <dt>{{ line.label }}</dt>
+            <dd><strong>{{ line.value }}</strong> <span class="brain-note">{% if line.note %}{{ line.note }} · {% endif %}{{ line.source }}</span></dd>
+          </div>
+        {% endfor %}
+      </dl>
+    </section>
+  </div>
+  <div class="col-lg-4">
+    <section class="placeholder-card" id="brain-understanding">
+      <h2>System understanding</h2>
+      <ul class="brain-list list-unstyled mb-0">
+        {% for item in brain.understanding %}
+          <li>
+            <strong>{{ item.label }} {{ item.symbol }}</strong>
+            <span class="brain-note">{{ item.note }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+  <div class="col-lg-4">
+    <section class="placeholder-card" id="brain-available">
+      <h2>Available resources</h2>
+      <ul class="brain-list list-unstyled mb-0">
+        {% for item in brain.available %}
+          <li>
+            <strong class="{% if item.available %}brain-ok{% else %}brain-no{% endif %}">{{ item.label }} {{ item.symbol }}</strong>
+            <span class="brain-note">{{ item.note }}</span>
+          </li>
+        {% endfor %}
+      </ul>
+    </section>
+  </div>
+</div>
+
+<section class="placeholder-card mb-4" id="brain-action">
+  <h2>Current action</h2>
+  <p class="brain-note">Flows the simulation engine applied this hour.</p>
+  <ul class="list-unstyled mb-3">
+    {% for flow in brain.action.flows %}
+      <li class="mb-2">
+        <span class="brain-flow">
+          {% for step in flow.steps %}<span class="brain-step">{{ step }}</span>{% if not forloop.last %}<span class="brain-arrow" aria-hidden="true">→</span>{% endif %}{% endfor %}
+        </span>
+        <span class="brain-note">{{ flow.note }}</span>
+      </li>
+    {% endfor %}
+  </ul>
+  <h3 class="h6">Latest recorded control actions</h3>
+  {% if brain.action.recorded %}
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead>
+          <tr>
+            <th>Source</th>
+            <th>Mode</th>
+            <th>Action</th>
+            <th>Actuator</th>
+            <th>State</th>
+            <th>Reason</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in brain.action.recorded %}
+            <tr>
+              <td>{{ row.source }}</td>
+              <td>{{ row.mode }}</td>
+              <td>{{ row.action }}</td>
+              <td>{{ row.actuator }}</td>
+              <td>{{ row.previous_state }} → {{ row.new_state }}</td>
+              <td>{{ row.reason }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="mb-0">No control action recorded for this selection.</p>
+  {% endif %}
+</section>

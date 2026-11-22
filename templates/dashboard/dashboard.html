@@ -1,0 +1,216 @@
+{% extends "base.html" %}
+{% load static kizuna_fr %}
+
+{% block title %}Tableau de bord · KIZUNA{% endblock %}
+
+{% block main_class %}container py-4 kz-dash{% endblock %}
+
+{% block content %}
+  <style>
+    .dash-status{display:flex;align-items:center;gap:1rem;padding:1rem 1.25rem;margin-bottom:1.5rem;border-radius:16px;background:#e7f5ee;border:1px solid #bfe3cf}
+    .dash-status.is-alert{background:#fdecea;border-color:#f3c0b9}
+    .dash-status .metric-3d{position:static;transform:none;width:96px;height:96px;flex:none}
+    .dash-status h2{margin:0;font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:var(--kz-sea)}
+    .dash-status .dash-value{margin:.15rem 0;font-size:1.6rem;font-weight:700;color:var(--kz-ink)}
+    .dash-status p{margin:0}
+    .dash-hero{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1rem;margin-bottom:1.25rem}
+    .dash-hero .dash-card{text-align:center;padding:1rem 1rem 1.25rem}
+    .dash-hero .dash-card h2{margin-bottom:0}
+    .dash-hero .dash-value{font-size:2.2rem}
+    .dash-hero .dash-card p.dash-say{margin:0;color:#5b6b66;font-size:.92rem}
+    .dash-cta{display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 1.25rem;margin-bottom:1.5rem;border-radius:16px;background:var(--kz-ink, #16302a);color:#f4efe6}
+    .dash-cta p{margin:0;font-size:1.05rem}
+    .dash-cta a{white-space:nowrap;padding:.6rem 1.1rem;border-radius:10px;background:#9be3d3;color:#16302a;font-weight:700;text-decoration:none}
+    .dash-more{border:1px solid var(--kz-line, #dde3df);border-radius:16px;background:#fff;margin-bottom:1.5rem}
+    .dash-more>summary{cursor:pointer;list-style:none;padding:1rem 1.25rem;font-weight:700;color:var(--kz-sea)}
+    .dash-more>summary::-webkit-details-marker{display:none}
+    .dash-more>summary::before{content:"▸ ";display:inline-block;transition:transform .2s}
+    .dash-more[open]>summary::before{transform:rotate(90deg)}
+    .dash-more .dash-grid{padding:0 1.25rem 1.25rem}
+    @media (max-width:991px){.dash-hero{grid-template-columns:repeat(2,minmax(0,1fr))}}
+    @media (max-width:575px){.dash-cta{flex-direction:column;align-items:flex-start}}
+  </style>
+
+  <div class="dash-main" data-live="dashboard" data-alerts="{{ brief.alerts }}">
+    <header class="dash-head">
+      <div>
+        <p class="kicker">Tunisie · eau · énergie · résilience</p>
+        <h1>Mon tableau de bord</h1>
+        <p class="dash-sub"><span class="sim-flag">Simulation</span> Heure <span data-live-text="hour">{{ brief.hour }}</span> · <span data-live-text="scenario">{{ brief.scenario|fr }}</span> · {{ user.first_name|default:user.username }}</p>
+      </div>
+      <div class="dash-actions">
+        <button class="dash-run" type="button" data-run-clock>Faire avancer le temps</button>
+        <a class="dash-start" href="{% url 'crisis:day' %}"><svg class="kz-i" aria-hidden="true"><use href="#i-alert"></use></svg> Lancer la journée de crise</a>
+      </div>
+    </header>
+
+    {# 1. One sentence: is everything fine? #}
+    <section class="dash-status{% if brief.crisis_state != 'none' or brief.alerts %} is-alert{% endif %}" id="dash-status">
+      <canvas class="metric-3d" data-metric3d="alert" data-live-source="crisis" data-value="{% if brief.crisis_state == 'none' and brief.alerts == 0 %}0{% else %}1{% endif %}" aria-hidden="true" hidden></canvas>
+      <div>
+        <h2>Alerte en cours</h2>
+        {% if brief.crisis_state == 'none' and brief.alerts == 0 %}
+          <p class="dash-value" data-live-text="crisis">Tout est calme</p>
+          <p data-live-text="crisis-detail">Aucune crise en ce moment. Votre maison fonctionne normalement.</p>
+        {% elif brief.crisis_state == 'none' %}
+          <p class="dash-value" data-live-text="crisis">{{ brief.alerts }} alerte{{ brief.alerts|pluralize }}</p>
+          <p data-live-text="crisis-detail">À voir sur vos maisons. Situation générale : {{ brief.scenario|fr }}.</p>
+        {% else %}
+          <p class="dash-value" data-live-text="crisis">{{ brief.crisis_state|upper|fr }}</p>
+          <p data-live-text="crisis-detail">{{ brief.alerts }} alerte{{ brief.alerts|pluralize }} sur vos maisons. Situation : {{ brief.scenario|fr }}.</p>
+        {% endif %}
+      </div>
+    </section>
+
+    {# 2. Four big pictures instead of a wall of numbers. #}
+    <section class="dash-hero" aria-label="L'essentiel de votre maison">
+      <article class="dash-card">
+        <canvas class="metric-3d" data-metric3d="tank" data-live-source="home-tank" data-value="{{ brief.water.home_percent }}" aria-hidden="true" hidden></canvas>
+        <h2>Eau</h2>
+        <p class="dash-value"><span data-live-text="home-tank">{{ brief.water.home_percent|floatformat:0 }}</span> %</p>
+        <p class="dash-say">Réservoir de la maison</p>
+        <div class="dash-meter"><span data-live-meter="home-tank" style="width: {{ brief.water.home_percent }}%"></span></div>
+      </article>
+      <article class="dash-card">
+        <canvas class="metric-3d" data-metric3d="battery" data-live-source="home-battery" data-value="{{ brief.energy.home_battery }}" aria-hidden="true" hidden></canvas>
+        <h2>Énergie</h2>
+        <p class="dash-value"><span data-live-text="home-battery">{{ brief.energy.home_battery|floatformat:0 }}</span> %</p>
+        <p class="dash-say">Batterie de la maison</p>
+        <div class="dash-meter dash-meter-energy"><span data-live-meter="home-battery" style="width: {{ brief.energy.home_battery }}%"></span></div>
+      </article>
+      <article class="dash-card">
+        <canvas class="metric-3d" data-metric3d="solar" data-live-source="home-solar" data-value="{{ brief.solar.home_w }}" aria-hidden="true" hidden></canvas>
+        <h2>Production solaire</h2>
+        <p class="dash-value"><span data-live-text="home-solar">{{ brief.solar.home_w|floatformat:0 }}</span> W</p>
+        <p class="dash-say">Produit par vos panneaux</p>
+      </article>
+      <article class="dash-card">
+        <canvas class="metric-3d" data-metric3d="resilience" data-live-source="resilience" data-value="{{ brief.resilience }}" aria-hidden="true" hidden></canvas>
+        <h2>Score de résilience</h2>
+        <p class="dash-value"><span data-live-text="resilience">{{ brief.resilience|floatformat:0 }}</span> / 100</p>
+        <p class="dash-say">Plus il est haut, mieux vous tenez en cas de crise</p>
+      </article>
+    </section>
+
+    {# 3. One clear next step. #}
+    <section class="dash-cta">
+      {% if sees_farm %}
+        <p><strong>Jumeau numérique</strong> · Pompe de la ferme : <span data-live-text="pump">{{ brief.pump|capfirst|fr }}</span>, humidité du sol <span data-live-text="soil">{{ brief.soil }}</span> %, stress des cultures {{ brief.farm.crop_stress|default:"0" }} / 100.</p>
+        <a href="{% url 'farms:list' %}">Ouvrir ma ferme →</a>
+      {% elif sees_business %}
+        <p><strong>Marché export direct</strong> · Les récoltes tunisiennes, avec la preuve de qualité de chaque ferme.</p>
+        <a href="{% url 'market:board' %}">Ouvrir le marché →</a>
+      {% else %}
+        <p><strong>Jumeau numérique</strong> · Voyez {% if brief.home %}{{ brief.home.name }}{% else %}votre maison{% endif %} en 3D et lancez une simulation.</p>
+        <a href="{% url 'twin:board' %}">Voir ma maison en 3D →</a>
+      {% endif %}
+    </section>
+
+    {# 4. Everything else, for those who want it. #}
+    <details class="dash-more" id="dash-more">
+      <summary>Voir les détails (chiffres, échanges, conseils, évolution)</summary>
+      <section class="dash-grid">
+        <article class="dash-card">
+          <h2>État général</h2>
+          <p class="dash-value" data-live-text="status">{{ brief.status.text|fr }}</p>
+          <p>Réseau électrique : <span data-live-text="grid">{{ brief.energy.grid|fr }}</span>. <span data-live-text="status-detail">{{ brief.status.detail|fr }}</span></p>
+          {% if sees_farm %}
+            <p>Ferme : réservoir <span data-live-text="farm-tank">{{ brief.water.farm_percent }}</span> %, batterie <span data-live-text="farm-battery">{{ brief.energy.farm_battery }}</span> %, solaire <span data-live-text="farm-solar">{{ brief.solar.farm_w }}</span> W.</p>
+          {% endif %}
+          {% if brief.home %}
+            <p>{{ brief.home.name }} : résilience {{ brief.home.resilience }} / 100. Appareils allumés : {{ brief.home.energy_watts }} W.</p>
+          {% endif %}
+        </article>
+        <article class="dash-card">
+          <h2>Eau récupérée</h2>
+          {% if brief.recovery_l is None %}
+            <p class="dash-value">—</p>
+            <p>Aucune eau récupérée enregistrée pour le moment.</p>
+          {% else %}
+            <p class="dash-value">{{ brief.recovery_l }} L</p>
+            <p>Total de l'eau de pluie récupérée.</p>
+          {% endif %}
+        </article>
+        <article class="dash-card dash-flows">
+          <h2>Échanges de ressources</h2>
+          <ul id="dash-flows">
+            {% for flow in brief.flows %}
+              <li>
+                <span>{{ flow.source_label|fr_flow }} → {{ flow.destination_label|fr_flow }}</span>
+                <strong>{{ flow.quantity }} {{ flow.unit }}</strong>
+              </li>
+            {% empty %}
+              <li>Aucun échange pour cette heure.</li>
+            {% endfor %}
+          </ul>
+          {% if sees_platform %}<a href="{% url 'network:board' %}">Ouvrir le réseau →</a>{% endif %}
+        </article>
+        <article class="dash-card dash-brain">
+          <h2>Conseils de KIZUNA</h2>
+          <p class="dash-value" data-live-text="brain">{{ brief.brain.text|fr }}</p>
+          <p data-live-text="brain-detail">{{ brief.brain.detail|fr }}</p>
+          <ul id="dash-brain-lines">
+            {% for line in brief.brain.lines %}
+              <li><span>{{ line.label|fr }}</span><strong>{{ line.value|fr }}</strong></li>
+            {% endfor %}
+          </ul>
+          {% if sees_platform %}<a href="{% url 'brain:board' %}">Ouvrir le cerveau →</a>{% endif %}
+        </article>
+        <article class="dash-card dash-chart-card">
+          <h2>Évolution</h2>
+          <p>Niveau du réservoir et de la batterie de la maison, heure par heure.</p>
+          <div class="dash-chart"><canvas id="dash-chart" aria-label="Réservoir et batterie de la maison, heure par heure"></canvas></div>
+        </article>
+      </section>
+    </details>
+
+    {% if sections %}
+      <section class="kz-records" aria-labelledby="kz-records-title">
+        <h2 id="kz-records-title">Gérer mes données</h2>
+        <div class="kz-records-list">
+          {% for section in sections %}
+            <a class="kz-record" href="{{ section.url }}"><strong>{{ section.label }}</strong><span>{{ section.text }}</span></a>
+          {% endfor %}
+        </div>
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/live.js' %}?v=ux2"></script>
+  <script type="module" src="{% static 'js/metric3d.js' %}?v=3"></script>
+  <script>
+    (function () {
+      // The status band turns red when an alert or a crisis is live.
+      var band = document.getElementById("dash-status");
+      var text = band && band.querySelector("[data-live-text='crisis']");
+      if (text) {
+        new MutationObserver(function () {
+          band.classList.toggle("is-alert", !/calme/i.test(text.textContent || ""));
+        }).observe(text, { childList: true, characterData: true, subtree: true });
+      }
+      // Big numbers stay whole: 62.02 becomes 62.
+      document.querySelectorAll(".dash-hero [data-live-text]").forEach(function (node) {
+        var round = function () {
+          var v = parseFloat(String(node.textContent).replace(",", "."));
+          var whole = isFinite(v) ? String(Math.round(v)) : node.textContent;
+          if (node.textContent !== whole) {
+            node.textContent = whole;
+          }
+        };
+        round();
+        new MutationObserver(round).observe(node, { childList: true, characterData: true, subtree: true });
+      });
+      // Charts drawn while hidden have no size: redraw when the details open.
+      var more = document.getElementById("dash-more");
+      if (more) {
+        more.addEventListener("toggle", function () {
+          if (more.open) {
+            window.dispatchEvent(new Event("resize"));
+          }
+        });
+      }
+    })();
+  </script>
+{% endblock %}

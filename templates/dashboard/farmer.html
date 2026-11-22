@@ -1,0 +1,64 @@
+<p class="kicker">Farmer</p>
+<h1>Dashboard</h1>
+<p class="lead">Signed in as {{ user.username }}. Soil, crop, tank, solar, irrigation, water requirement, and crop stress below are simulated from the farm configuration.</p>
+
+{% if farms %}
+  <form class="mb-4" method="get" action="{% url 'dashboard' %}">
+    <label class="form-label" for="farm-switch">Farm</label>
+    <div class="d-flex gap-2 flex-wrap">
+      <select class="form-select home-switch farm-switch" id="farm-switch" name="farm">
+        {% for farm in farms %}
+          <option value="{{ farm.pk }}" {% if selected_farm.pk == farm.pk %}selected{% endif %}>{{ farm.name }}</option>
+        {% endfor %}
+      </select>
+      <button class="btn btn-outline-primary" type="submit">Show</button>
+    </div>
+  </form>
+  <div class="row g-3">
+    {% include "dashboard/metric.html" with label="Soil moisture" value=snapshot.soil_moisture unit="%" show_meter="yes" meter=snapshot.soil_moisture %}
+    {% include "dashboard/metric.html" with label="Crop status" value=snapshot.crop_status unit="" %}
+    {% include "dashboard/metric.html" with label="Tank level" value=snapshot.tank_percent unit="%" show_meter="yes" meter=snapshot.tank_percent %}
+    {% include "dashboard/metric.html" with label="Solar production" value=snapshot.solar_watts unit="W" %}
+    {% include "dashboard/metric.html" with label="Irrigation status" value=snapshot.irrigation_status unit="" %}
+    {% include "dashboard/metric.html" with label="Estimated water requirement" value=snapshot.water_liters_per_day unit="L/day" %}
+    {% include "dashboard/metric.html" with label="Crop stress" value=snapshot.crop_stress unit="/ 100" show_meter="yes" meter=snapshot.crop_stress %}
+  </div>
+  {% if selected_farm.latitude and selected_farm.longitude %}
+    <div class="farm-map farm-map-view mt-4" data-lat="{{ selected_farm.latitude }}" data-lng="{{ selected_farm.longitude }}" role="application" aria-label="Farm location"></div>
+  {% else %}
+    <p class="mt-4">This farm has no map point yet. Edit it and click the map to set the location.</p>
+  {% endif %}
+  <section class="placeholder-card mt-3">
+    <h2>Installed sensors</h2>
+    <p>{{ snapshot.sensor_count }} sensor{{ snapshot.sensor_count|pluralize }} on this farm. The figures above stay simulated.</p>
+    {% if snapshot.active_sensors %}
+      <ul class="mb-0">
+        {% for item in snapshot.active_sensors %}
+          <li>{{ item.name }} · {{ item.kind }} ({{ item.unit }})</li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <p class="mb-0">No active sensors.</p>
+    {% endif %}
+    <p class="mt-3 mb-0"><a href="{% url 'farms:detail' selected_farm.pk %}">Configure {{ selected_farm.name }}</a></p>
+  </section>
+{% else %}
+  <section class="placeholder-card">
+    <h2>No farm yet</h2>
+    <p>Add a farm to see simulated soil moisture, crop status, tank level, solar production, irrigation, water requirement, and crop stress.</p>
+    <a class="btn btn-primary" href="{% url 'farms:create' %}">Add a farm</a>
+  </section>
+{% endif %}
+
+<h2 class="mt-5">Also available</h2>
+<div class="row g-3">
+  {% for section in sections %}
+    <div class="col-md-6 col-lg-3">
+      <section class="placeholder-card">
+        <h2>{{ section.label }}</h2>
+        <p>{{ section.text }}</p>
+        <a href="{{ section.url }}">Open</a>
+      </section>
+    </div>
+  {% endfor %}
+</div>

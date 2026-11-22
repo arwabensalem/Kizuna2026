@@ -1,0 +1,106 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} · KIZUNA{% endblock %}
+{% block main_class %}kz-farm-page{% endblock %}
+
+{% block content %}
+<header class="kz-page-hero">
+  <div class="container kz-page-hero-inner">
+    <p class="kz-eyebrow"><span class="kz-eyebrow-dot"></span>Ma ferme · {% if farm %}modification{% else %}nouvelle ferme{% endif %}</p>
+    <h1 class="kz-page-title">{{ title }}</h1>
+    <p class="kz-page-lead">Trois étapes : où se trouve la ferme, ce que vous cultivez, et comment vous l’arrosez. Environ 3 minutes.</p>
+    <ol class="kz-stepper" aria-label="Étapes">
+      <li><a href="#etape-lieu"><span>1</span>Lieu</a></li>
+      <li><a href="#etape-cultures"><span>2</span>Cultures</a></li>
+      <li><a href="#etape-eau"><span>3</span>Eau et énergie</a></li>
+    </ol>
+  </div>
+</header>
+
+<div class="container py-4 py-lg-5">
+  {% if form.errors or formset.non_form_errors or formset.total_error_count %}
+    <div class="alert alert-danger kz-form-summary" role="alert">
+      <svg class="kz-i" aria-hidden="true"><use href="#i-alert"></use></svg>
+      <strong>La ferme n’est pas encore enregistrée.</strong> Corrigez les points en rouge.
+      {% for error in form.non_field_errors %}<div>{{ error }}</div>{% endfor %}
+      {% for error in formset.non_form_errors %}<div>{{ error }}</div>{% endfor %}
+    </div>
+  {% endif %}
+
+  <form method="post" class="kz-farm-form" novalidate data-farm-form>
+    {% csrf_token %}
+
+    <section class="kz-panel" id="etape-lieu" aria-labelledby="t-lieu">
+      <div class="kz-panel-head">
+        <span class="kz-panel-n">1</span>
+        <div><h2 id="t-lieu">Où se trouve votre ferme ?</h2><p>Tapez votre ville ou délégation : la carte de la Tunisie se place toute seule. Cliquez ensuite sur votre parcelle exacte.</p></div>
+      </div>
+      <div class="row g-4">
+        <div class="col-lg-5">
+          {% include "homes/field.html" with field=form.name %}
+          <div class="kz-search">
+            {% include "homes/field.html" with field=form.location %}
+            <p class="kz-geo-status small mb-2" data-geo-status aria-live="polite"></p>
+          </div>
+          <datalist id="kz-places">{% for place in places %}<option value="{{ place.name }}">{% endfor %}</datalist>
+          <button class="btn btn-outline-primary btn-sm mb-3" type="button" data-geo-me><svg class="kz-i" aria-hidden="true"><use href="#i-map"></use></svg> Utiliser ma position</button>
+          <div class="row g-2">
+            <div class="col-6">{% include "homes/field.html" with field=form.latitude %}</div>
+            <div class="col-6">{% include "homes/field.html" with field=form.longitude %}</div>
+          </div>
+          {% include "homes/field.html" with field=form.area_m2 %}
+          <p class="small text-secondary mb-0">1 hectare = 10 000 m².</p>
+        </div>
+        <div class="col-lg-7">
+          <div id="farm-map" class="farm-map kz-map-lg" role="application" aria-label="Carte de la Tunisie pour placer la ferme"></div>
+        </div>
+      </div>
+      {{ places|json_script:"kz-places-data" }}
+    </section>
+
+    {% if formset %}
+    <section class="kz-panel" id="etape-cultures" aria-labelledby="t-cultures">
+      <div class="kz-panel-head">
+        <span class="kz-panel-n">2</span>
+        <div><h2 id="t-cultures">Que cultivez-vous ?</h2><p>Ajoutez chaque culture avec sa surface exacte. Exemple : 3 ha d’oliviers, 5 000 m² de tomates.</p></div>
+      </div>
+      {{ formset.management_form }}
+      <div class="kz-crop-rows" data-crop-rows>
+        {% for crop_form in formset %}
+          {% include "farms/_crop_row.html" with f=crop_form %}
+        {% endfor %}
+      </div>
+      <template data-crop-template>{% include "farms/_crop_row.html" with f=formset.empty_form %}</template>
+      <button class="btn btn-outline-primary mt-2" type="button" data-crop-add>+ Ajouter une culture</button>
+      <div class="kz-area-gauge mt-4" data-area-gauge>
+        <div class="d-flex justify-content-between small fw-semibold mb-1"><span data-area-text>0 m² cultivés</span><span data-area-total></span></div>
+        <div class="kz-area-bar"><div data-area-bar></div></div>
+      </div>
+    </section>
+    {% endif %}
+
+    <section class="kz-panel" id="etape-eau" aria-labelledby="t-eau">
+      <div class="kz-panel-head">
+        <span class="kz-panel-n">3</span>
+        <div><h2 id="t-eau">Sol, eau et énergie</h2><p>Ces informations servent à calculer quand arroser et combien.</p></div>
+      </div>
+      <div class="row g-3">
+        <div class="col-md-6 col-lg-3">{% include "homes/field.html" with field=form.soil_type %}</div>
+        <div class="col-md-6 col-lg-3">{% include "homes/field.html" with field=form.irrigation_type %}</div>
+        <div class="col-md-6 col-lg-3">{% include "homes/field.html" with field=form.tank_capacity_liters %}</div>
+        <div class="col-md-6 col-lg-3">{% include "homes/field.html" with field=form.solar_capacity_watts %}</div>
+      </div>
+    </section>
+
+    <div class="kz-form-actions">
+      <button class="btn btn-primary btn-lg" type="submit">Enregistrer la ferme</button>
+      <a class="btn btn-outline-primary btn-lg" href="{% if farm %}{% url 'farms:detail' farm.pk %}{% else %}{% url 'farms:list' %}{% endif %}">Annuler</a>
+    </div>
+  </form>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/farm.js' %}?v=pro3"></script>
+{% endblock %}

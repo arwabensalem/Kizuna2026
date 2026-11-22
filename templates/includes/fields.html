@@ -1,0 +1,21 @@
+{% for error in form.non_field_errors %}
+  <div class="alert alert-danger" role="alert"><svg class="kz-i" aria-hidden="true"><use href="#i-alert"></use></svg> {{ error }}</div>
+{% endfor %}
+{% for field in form %}
+  {% if field.is_hidden %}{{ field }}{% else %}
+  <div class="mb-3{% if field.field.widget.input_type == 'checkbox' %} form-check{% endif %}">
+    {% if field.field.widget.input_type == 'checkbox' %}
+      {{ field }}
+      <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+    {% else %}
+      <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}{% if field.field.required %}<span class="kz-required" aria-hidden="true">*</span>{% endif %}</label>
+      {{ field }}
+    {% endif %}
+    {% if field.help_text %}<div class="form-text">{{ field.help_text|safe }}</div>{% endif %}
+    {% for error in field.errors %}
+      <div class="invalid-feedback d-block" role="alert"><svg class="kz-i" aria-hidden="true"><use href="#i-alert"></use></svg> {{ error }}</div>
+    {% endfor %}
+  </div>
+  {% endif %}
+{% endfor %}
+{% if form.fields %}<p class="form-text mb-3"><span class="kz-required">*</span> champ obligatoire</p>{% endif %}

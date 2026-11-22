@@ -1,0 +1,34 @@
+{% comment %}Facture prédite STEG et SONEDE. Attend « bills » (apps.homes.bills.predict_bills).{% endcomment %}
+<section class="kz-bills mb-4" aria-labelledby="kz-bills-title">
+  <div class="d-flex flex-wrap justify-content-between align-items-baseline gap-2">
+    <h2 id="kz-bills-title" class="mb-1">Mes prochaines factures</h2>
+    <span class="sim-flag">Estimation</span>
+  </div>
+  <p class="text-secondary mb-3">Calculées à partir de vos appareils et du nombre d’habitants, avec les barèmes STEG et SONEDE.</p>
+  <div class="row g-3">
+    {% for bill in bills_list %}
+    <div class="col-md-6">
+      <article class="kz-bill kz-bill-{{ bill.alert.status }}">
+        <header class="d-flex justify-content-between align-items-start gap-2">
+          <div>
+            <p class="kicker mb-1">{{ bill.provider }} · {% if bill.provider == 'STEG' %}électricité{% else %}eau{% endif %}</p>
+            <p class="kz-bill-amount mb-0">≈ {{ bill.amount }} <small>DT</small></p>
+          </div>
+          <span class="badge rounded-pill text-bg-light">Tranche {{ bill.alert.tier }}</span>
+        </header>
+        <p class="mb-2 mt-2">
+          {% if bill.provider == 'STEG' %}{{ bill.kwh_per_day }} kWh par jour · {{ bill.kwh_period }} kWh sur la période{% else %}{{ bill.liters_per_day }} L par jour · {{ bill.m3_period }} m³ sur le trimestre{% endif %}
+        </p>
+        <div class="progress mb-1" role="progressbar" aria-label="Avancement de la période" aria-valuenow="{{ bill.progress }}" aria-valuemin="0" aria-valuemax="100" style="height:.5rem">
+          <div class="progress-bar" style="width: {{ bill.progress }}%"></div>
+        </div>
+        <p class="small text-secondary mb-2">Prochaine facture vers le {{ bill.period_end|date:"j F Y" }}</p>
+        <p class="kz-bill-alert mb-0" role="{% if bill.alert.status == 'ok' %}status{% else %}alert{% endif %}">
+          <svg class="kz-i" aria-hidden="true"><use href="#i-{% if bill.alert.status == 'ok' %}info{% else %}alert{% endif %}"></use></svg>
+          <span>{{ bill.alert.message }}</span>
+        </p>
+      </article>
+    </div>
+    {% endfor %}
+  </div>
+</section>

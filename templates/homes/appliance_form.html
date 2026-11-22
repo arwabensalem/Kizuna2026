@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Appareil</p>
+  <h1>{{ title }}</h1>
+  <form method="post" class="auth-form" id="appliance-form" novalidate>
+    {% csrf_token %}
+    {% include "includes/fields.html" %}
+    <button class="btn btn-primary btn-lg" type="submit">Enregistrer</button>
+    <a class="btn btn-outline-primary btn-lg" href="{% url 'homes:appliances' %}">Annuler</a>
+  </form>
+  {{ rules|json_script:"appliance-rules" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/home.js' %}"></script>
+{% endblock %}

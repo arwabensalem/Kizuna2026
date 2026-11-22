@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Brain · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Brain</p>
+  <h1>System state and actions</h1>
+  <p class="lead">What the simulation and control engines see, what they did, and why, in short lines. This is not a chat, and it shows only values and actions the engines recorded.</p>
+
+  <form class="row g-3 mb-4" method="get" action="{% url 'brain:board' %}">
+    {% if homes %}
+      <div class="col-md-4">
+        <label class="form-label" for="home-select">Home</label>
+        <select class="form-select" id="home-select" name="home">
+          <option value="">None</option>
+          {% for item in homes %}
+            <option value="{{ item.pk }}" {% if home and item.pk == home.pk %}selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    {% if farms %}
+      <div class="col-md-4">
+        <label class="form-label" for="farm-select">Farm</label>
+        <select class="form-select" id="farm-select" name="farm">
+          <option value="">None</option>
+          {% for item in farms %}
+            <option value="{{ item.pk }}" {% if farm and item.pk == farm.pk %}selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+    {% endif %}
+    <div class="col-md-4 d-flex align-items-end gap-2">
+      <button class="btn btn-outline-primary" type="submit">Show</button>
+      <button class="btn btn-primary" id="brain-advance" type="button">Advance 1 simulated hour</button>
+    </div>
+  </form>
+  <p class="text-danger" id="brain-error" hidden></p>
+
+  <div
+    id="brain-panels"
+    data-live="brain"
+    data-seen="{{ brain.hour }}|{{ brain.scenario }}|{{ brain.status.level }}"
+    data-panels-url="{% url 'brain:panels' %}?{{ query }}"
+  >
+    {% include "brain/panels.html" %}
+  </div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/brain.js' %}"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load kizuna_fr %}
+
+{% block title %}{{ title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">{{ kicker }}</p>
+  <h1>{{ title }}</h1>
+  <div class="row g-4">
+    <div class="col-lg-7">
+      {% if rows %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                {% for heading in headings %}<th>{{ heading }}</th>{% endfor %}
+                <th></th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for row in rows %}
+                <tr>
+                  {% for cell in row.cells %}<td>{{ cell|fr_choice|fr }}</td>{% endfor %}
+                  <td><div class="kz-row-actions">
+                    {% if row.twin_url %}<a class="btn btn-sm btn-outline-primary" href="{{ row.twin_url }}">Voir en 3D</a>{% endif %}
+                    <a class="btn btn-sm btn-outline-primary" href="{{ row.edit_url }}">Modifier</a>
+                    <form class="d-inline" method="post" action="{{ row.delete_url }}">
+                      {% csrf_token %}
+                      <button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button>
+                    </form></div>
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>{{ empty_note|default:"Rien pour le moment." }}</p>
+      {% endif %}
+    </div>
+    <div class="col-lg-5">
+      <section class="placeholder-card">
+        <h2>{{ form_title }}</h2>
+        <form method="post" novalidate>
+          {% csrf_token %}
+          {% include "includes/fields.html" %}
+          <button class="btn btn-primary btn-lg" type="submit">Enregistrer</button>
+        </form>
+      </section>
+    </div>
+  </div>
+{% endblock %}

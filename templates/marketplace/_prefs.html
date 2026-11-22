@@ -1,0 +1,13 @@
+{# Barre de l'acheteur international : langue, devise, destination. #}
+<div class="bourse-prefs" aria-label="{{ T.language }} / {{ T.currency }}">
+  <div class="bourse-switch" role="group" aria-label="{{ T.language }}">
+    {% for code, label in languages %}
+      <a href="?lang={{ code }}" class="{% if code == lang %}is-on{% endif %}" lang="{{ code }}" {% if code == lang %}aria-current="true"{% endif %}>{{ label }}</a>
+    {% endfor %}
+  </div>
+  <div class="bourse-switch" role="group" aria-label="{{ T.currency }}">
+    {% for code in currencies %}
+      <a href="?cur={{ code }}" class="{% if code == cur %}is-on{% endif %}" {% if code == cur %}aria-current="true"{% endif %}>{{ code }}</a>
+    {% endfor %}
+  </div>
+</div>

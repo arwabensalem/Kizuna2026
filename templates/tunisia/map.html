@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Tunisia · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Tunisia</p>
+  <h1>From one home to the whole country</h1>
+  <p class="lead">Twenty-four governorates, then a city, a neighbourhood, and the homes, farms, and businesses inside it. The colour is the simulated resilience index.</p>
+  <p class="network-label" role="note">{{ label }}</p>
+
+  <div class="tunisia-toolbar">
+    <button class="btn btn-sm btn-outline-secondary" id="tn-country" type="button">Tunisia</button>
+    <button class="btn btn-primary btn-sm" id="tn-descend" type="button">Zoom to Home A</button>
+    <span class="tunisia-scenario" id="tn-scenario"></span>
+  </div>
+
+  <section class="tunisia-stage" aria-label="Tunisia map">
+    <div id="tn-map" data-boundaries="{{ boundaries }}" role="application" aria-label="Map of Tunisia"></div>
+    <aside class="tunisia-panel" id="tn-panel" aria-live="polite">
+      <p class="tunisia-panel-kicker">KIZUNA Resilience Index</p>
+      <p class="tunisia-note">Loading the simulated index…</p>
+    </aside>
+    <div class="tunisia-legend" aria-hidden="true">
+      <span>0</span>
+      <i></i>
+      <span>100</span>
+    </div>
+  </section>
+  <p class="tunisia-credit" id="tn-credit"></p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/tunisia.js' %}"></script>
+{% endblock %}

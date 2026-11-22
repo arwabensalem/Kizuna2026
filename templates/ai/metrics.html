@@ -1,0 +1,12 @@
+{% if task %}
+  <p class="mb-1">{{ task.model }}</p>
+  {% if 'mae' in task.validation %}
+    <p class="mb-1">Validation MAE {{ task.validation.mae|floatformat:4 }}{% if task.unit %} {{ task.unit }}{% endif %}, RMSE {{ task.validation.rmse|floatformat:4 }}{% if task.unit %} {{ task.unit }}{% endif %}, R² {{ task.validation.r2|floatformat:4 }}</p>
+  {% endif %}
+  {% if 'precision' in task.validation %}
+    <p class="mb-1">Validation precision {{ task.validation.precision|floatformat:4 }}, recall {{ task.validation.recall|floatformat:4 }}, F1 {{ task.validation.f1|floatformat:4 }}</p>
+  {% endif %}
+  <p class="mb-3">Calculated on {{ task.n_validation }} held-out synthetic rows.{% if task.note %} {{ task.note }}{% endif %}</p>
+{% else %}
+  <p class="mb-3">Validation metrics appear after the demo models are trained.</p>
+{% endif %}

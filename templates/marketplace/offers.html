@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block title %}{{ T.my_offers }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <p class="kicker mb-0"><a href="{% url 'market:board' %}">{{ T.back }}</a></p>
+    {% include "marketplace/_prefs.html" %}
+  </div>
+  <h1 class="mt-2">{{ T.my_offers }}</h1>
+  <p class="lead">Chaque offre est une négociation directe entre l'acheteur et l'agriculteur, sans intermédiaire.</p>
+  {% if rows %}
+    <div class="table-responsive league-board">
+      <table class="table align-middle mb-0">
+        <thead>
+          <tr>
+            <th>Annonce</th>
+            <th>Avec</th>
+            <th>Quantité</th>
+            <th>Prix / unité</th>
+            <th>Destination</th>
+            <th>État</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            {% with offer=row.offer %}
+            <tr>
+              <td>{% if offer.product %}{{ offer.product.name }}{% else %}Message direct{% endif %}</td>
+              <td>{% if row.role == 'buyer' %}{{ offer.farmer.username }} <small class="text-muted">(agriculteur)</small>{% else %}{{ offer.buyer.username }} <small class="text-muted">(acheteur)</small>{% endif %}</td>
+              <td>{{ offer.quantity|default:"—" }}</td>
+              <td>{{ row.price }}</td>
+              <td>{% if row.route %}{{ row.route.flag }} {{ row.route.city }}{% else %}—{% endif %}</td>
+              <td><span class="bourse-status is-{{ offer.status }}">{{ offer.get_status_display|default:"" }}</span></td>
+              <td><a class="btn btn-sm btn-outline-primary" href="{% url 'market:offer' offer.pk %}">Ouvrir</a></td>
+            </tr>
+            {% endwith %}
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Aucune offre pour le moment. Ouvrez une annonce pour faire une offre directe à l'agriculteur.</p>
+  {% endif %}
+{% endblock %}

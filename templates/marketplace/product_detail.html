@@ -1,0 +1,132 @@
+{% extends "base.html" %}
+
+{% block title %}{{ product.name }} · {{ T.title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <p class="kicker mb-0"><a href="{% url 'market:board' %}">{{ T.back }}</a></p>
+    {% include "marketplace/_prefs.html" %}
+  </div>
+  <div class="market-detail" lang="{{ lang }}">
+    <div>
+      <div class="market-card-top">
+        <span class="market-category">{{ product.cat_label }}</span>
+        <span class="market-badge market-{{ product.availability }}">{{ product.avail_label }}</span>
+      </div>
+      <h1>{{ product.name }}</h1>
+      {% if product.price_text %}
+        <p class="bourse-price bourse-price-lg">{{ product.price_text }} <small>{{ T.per }} {{ product.unit_label }} · {{ T.farmgate }}</small></p>
+      {% else %}
+        <p class="bourse-price">{{ T.price_on_request }}</p>
+      {% endif %}
+      <p class="market-qty">{{ product.quantity }} {{ product.unit_label }}</p>
+      <dl class="market-facts">
+        <div><dt>{{ T.origin }}</dt><dd>{{ product.origin }}</dd></div>
+        <div><dt>{{ T.harvest_date }}</dt><dd>{% if lang == "fr" %}{{ product.harvest_date|date:"j F Y" }}{% else %}{{ product.harvest_date|date:"Y-m-d" }}{% endif %}</dd></div>
+        <div><dt>{{ T.farmer }}</dt><dd><a href="{% url 'market:farmer' product.farmer.pk %}">{{ product.farmer.username }}</a></dd></div>
+      </dl>
+      {% if prices %}
+        <div class="bourse-prices" aria-label="{{ T.prices_in }}">
+          {% for p in prices %}<span class="{% if p.code == cur %}is-on{% endif %}">{{ p.flag }} {{ p.text }}</span>{% endfor %}
+        </div>
+      {% endif %}
+      {% if product.description %}
+        <h2 class="h6 mt-3">{{ T.story }}</h2>
+        <p>{{ product.description }}</p>
+      {% endif %}
+      {% if is_farmer %}
+        <div class="d-flex gap-2 mt-3">
+          <a class="btn btn-outline-primary" href="{% url 'market:edit' product.pk %}">{{ T.edit }}</a>
+          <form method="post" action="{% url 'market:delete' product.pk %}" data-confirm="Retirer l’annonce « {{ product.name }} » ? Les acheteurs ne la verront plus.">
+            {% csrf_token %}
+            <button class="btn btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> {{ T.remove }}</button>
+          </form>
+        </div>
+      {% endif %}
+    </div>
+    <aside class="market-request">
+      <a class="btn btn-primary w-100 mb-3 sim-open" href="{% url 'market:simulation' product.pk %}">💬 Négocier en direct (traduction FR / derja ⇄ 日本語)</a>
+      <h2>{{ T.request_title }}</h2>
+      {% if lang != 'fr' %}<p class="visually-hidden" lang="fr">Demander une quantité</p>{% endif %}
+      {% if form %}
+        <p>{{ T.request_intro }}</p>
+        <form method="post">
+          {% csrf_token %}
+          {% include "includes/fields.html" %}
+          <button class="btn btn-primary" type="submit">{{ T.send }}</button>
+        </form>
+      {% elif product.farmer_id == user.id %}
+        <p>{{ T.own_listing }}</p>
+      {% else %}
+        <p>{{ T.closed }}</p>
+        <a href="{% url 'market:farmer' product.farmer.pk %}">{{ T.write_to }} {{ product.farmer.username }}</a>
+      {% endif %}
+    </aside>
+  </div>
+
+  <section class="bourse-passport" lang="{{ lang }}">
+    <div>
+      <p class="kicker">{{ T.passport }}</p>
+      <p class="bourse-lot">{{ T.lot }} <strong>{{ product.lot_code }}</strong></p>
+      <dl class="bourse-passport-facts">
+        <div><dt>{{ T.farmer }}</dt><dd>{{ product.farmer.get_full_name|default:product.farmer.username }}</dd></div>
+        <div><dt>{{ T.farm }}</dt><dd>{% if product.farm %}{{ product.farm.name }}{% if product.farm.area_m2 %} · {% widthratio product.farm.area_m2 10000 1 %} ha{% endif %}{% else %}{{ product.origin }}{% endif %}</dd></div>
+        <div><dt>{{ T.certifications }}</dt><dd>
+          {% for label in product.cert_labels %}<span class="bourse-chip">{{ label }}</span>{% empty %}{{ T.none }}{% endfor %}
+          {% if product.export_ready %}<span class="bourse-chip is-export">✈ {{ T.export_ready }}</span>{% endif %}
+        </dd></div>
+        {% if product.min_order %}<div><dt>{{ T.min_order }}</dt><dd>{{ product.min_order }} {{ product.unit_label }}</dd></div>{% endif %}
+      </dl>
+      <ol class="bourse-timeline">
+        {% for label, day in timeline %}
+          <li><span>{{ label }}</span><strong>{% if lang == "fr" %}{{ day|date:"j M Y" }}{% else %}{{ day|date:"Y-m-d" }}{% endif %}</strong></li>
+        {% endfor %}
+      </ol>
+    </div>
+    {% if coords %}
+      <div id="bourse-map" class="bourse-map" data-lat="{{ coords.0|stringformat:'f' }}" data-lng="{{ coords.1|stringformat:'f' }}" data-label="{{ product.farm.name|default:product.origin }}" role="img" aria-label="{{ T.origin }} : {{ product.origin }}"></div>
+    {% endif %}
+  </section>
+
+  <section class="bourse-proof" lang="{{ lang }}">
+    <p class="kicker">{{ proof_T.title }}</p>
+    {% if proof %}
+      <p class="bourse-proof-intro">{{ proof_T.intro }}</p>
+      <dl class="bourse-passport-facts">
+        {% for label, value in proof %}<div><dt>{{ label }}</dt><dd>{{ value }}</dd></div>{% endfor %}
+      </dl>
+    {% else %}
+      <p>{{ proof_T.none }}</p>
+    {% endif %}
+  </section>
+
+  <section class="sim-cta">
+    <p><strong>Négociation en direct traduite.</strong> L'agriculteur écrit en tunisien, l'acheteur lit en japonais, et inversement.</p>
+    <a href="{% url 'market:simulation' product.pk %}">Ouvrir la négociation 💬</a>
+  </section>
+
+  {% if chain %}
+    {% include "marketplace/_chain.html" %}
+  {% endif %}
+
+  {% include "marketplace/_logistics.html" %}
+  <p class="bourse-note mt-2">{{ T.rates_note }}</p>
+{% endblock %}
+
+{% block scripts %}
+  {% if coords %}
+  <script>
+    (function () {
+      var el = document.getElementById("bourse-map");
+      if (!el || !window.L) { return; }
+      var lat = parseFloat(el.dataset.lat), lng = parseFloat(el.dataset.lng);
+      var map = L.map(el, { scrollWheelZoom: false }).setView([lat, lng], 8);
+      L.tileLayer("https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}", {
+        maxZoom: 18, attribution: "Tiles © Esri"
+      }).addTo(map);
+      L.circleMarker([lat, lng], { radius: 10, color: "#0f6e6e", fillColor: "#9be3d3", fillOpacity: 0.9, weight: 3 })
+        .addTo(map).bindPopup(el.dataset.label).openPopup();
+    })();
+  </script>
+  {% endif %}
+{% endblock %}

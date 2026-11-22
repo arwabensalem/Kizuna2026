@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load kizuna_fr %}
+
+{% block title %}Appareils · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <p class="kicker">Ma maison</p>
+      <h1 class="mb-0">Mes appareils</h1>
+    </div>
+    <a class="btn btn-primary" href="{% url 'homes:appliance_create' %}">+ Ajouter un appareil</a>
+  </div>
+  {% if appliances %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            <th>Maison</th>
+            <th>Appareil</th>
+            <th>Pièce</th>
+            <th>Électricité</th>
+            <th>Eau</th>
+            <th>État</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for item in appliances %}
+            <tr>
+              <td>{{ item.home.name }}</td>
+              <td>{{ item|fr_appliance }}</td>
+              <td>{{ item.room.name|default:"—" }}</td>
+              <td>{{ item.power_watts }} W</td>
+              <td>{{ item.water_liters_per_hour }} L/h</td>
+              <td>{% if item.is_active %}<span class="badge text-bg-success">Allumé</span>{% else %}<span class="badge text-bg-secondary">Éteint</span>{% endif %}</td>
+              <td><div class="kz-row-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'homes:appliance_edit' item.pk %}">Modifier</a>
+                <form class="d-inline" method="post" action="{% url 'homes:appliance_delete' item.pk %}" data-confirm="Supprimer l'appareil « {{ item|fr_appliance }} » ?">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button>
+                </form></div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p class="text-muted">Aucun appareil pour le moment.</p>
+  {% endif %}
+{% endblock %}

@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Ma maison · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <p class="kicker">Mon espace</p>
+      <h1 class="mb-0">Ma maison</h1>
+    </div>
+    <a class="btn btn-primary" href="{% url 'homes:create' %}">+ Ajouter une maison</a>
+  </div>
+  <div class="row g-3">
+    {% for home in homes %}
+      <div class="col-md-6 col-lg-4">
+        <section class="placeholder-card">
+          <h2>{{ home.name }}</h2>
+          <p class="mb-1">{{ home.area_m2 }} m² · {{ home.residents }} habitant{{ home.residents|pluralize }}</p>
+          <p class="mb-3">{{ home.bedrooms }} chambre{{ home.bedrooms|pluralize }} · {{ home.bathrooms }} salle{{ home.bathrooms|pluralize }} de bain</p>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'homes:detail' home.pk %}">Ouvrir <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></a>
+        </section>
+      </div>
+    {% empty %}
+      <section class="placeholder-card"><h2>Vous n'avez pas encore ajouté de maison</h2><p>Ajoutez votre maison pour suivre votre eau et votre électricité. Cela prend deux minutes.</p><a class="btn btn-primary" href="{% url 'homes:create' %}">+ Ajouter ma maison</a></section>
+    {% endfor %}
+  </div>
+{% endblock %}

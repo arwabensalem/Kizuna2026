@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}Offre · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <p class="kicker mb-0"><a href="{% url 'market:offers' %}">← {{ T.my_offers }}</a></p>
+    {% include "marketplace/_prefs.html" %}
+  </div>
+  <h1 class="mt-2">{% if offer.product %}{{ offer.product.name }}{% else %}Message direct{% endif %}</h1>
+  <p class="lead">
+    {{ offer.buyer.username }} <span aria-hidden="true">⇄</span> {{ offer.farmer.username }} · contrat direct, sans intermédiaire
+    <span class="bourse-status is-{{ offer.status }}">{{ offer.get_status_display }}</span>
+  </p>
+
+  <div class="market-detail">
+    <div>
+      <dl class="market-facts">
+        <div><dt>Quantité</dt><dd>{{ offer.quantity|default:"—" }}{% if offer.product %} {{ offer.product.get_unit_display }}{% endif %}</dd></div>
+        <div><dt>Prix / unité</dt><dd>{{ price_text }}</dd></div>
+        <div><dt>Total</dt><dd><strong>{{ total_text }}</strong></dd></div>
+        <div><dt>Destination</dt><dd>{% if route %}{{ route.flag }} {{ route.city }} · {{ route.days }} {{ T.days }}{% else %}—{% endif %}</dd></div>
+        <div><dt>Incoterm</dt><dd>{{ offer.incoterm }}</dd></div>
+        <div><dt>{{ T.farmer_share_label }}</dt><dd>{% if deal %}<strong class="bourse-win-text">{{ deal.farmer_share }} %</strong> <small>(≈ {{ deal.traditional_share }} % en chaîne classique)</small>{% else %}—{% endif %}</dd></div>
+      </dl>
+
+      <h2 class="h5 mt-3">Échanges</h2>
+      <ol class="bourse-thread">
+        {% for item in thread %}
+          <li class="{% if item.author_id == user.id %}is-me{% endif %}">
+            <div class="bourse-thread-head">
+              <strong>{{ item.author.username }}</strong>
+              <span>{{ item.created_at|date:"j M Y, H:i" }}</span>
+            </div>
+            {% if item.event == 'offer' %}<p class="bourse-event">Offre initiale{% if item.price_text %} : {{ item.price_text }} / unité{% endif %}</p>{% endif %}
+            {% if item.event == 'counter' %}<p class="bourse-event">Contre-offre : {{ item.price_text }} / unité</p>{% endif %}
+            {% if item.event == 'accept' %}<p class="bourse-event is-good">✓ Offre acceptée, vente conclue</p>{% endif %}
+            {% if item.event == 'decline' %}<p class="bourse-event is-bad">Offre refusée</p>{% endif %}
+            {% if item.body %}<p>{{ item.body|linebreaksbr }}</p>{% endif %}
+          </li>
+        {% empty %}
+          {% if offer.message %}<li><p>{{ offer.message }}</p></li>{% endif %}
+        {% endfor %}
+      </ol>
+    </div>
+
+    <aside class="market-request">
+      <h2>Répondre</h2>
+      <form method="post" class="bourse-reply">
+        {% csrf_token %}
+        {% for error in form.non_field_errors %}<div class="alert alert-danger">{{ error }}</div>{% endfor %}
+        <label class="form-label" for="id_body">Message</label>
+        <textarea class="form-control mb-2" id="id_body" name="body" rows="3" placeholder="Bonjour, こんにちは, hello…">{{ form.body.value|default:"" }}</textarea>
+        {% for error in form.body.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+        <button class="btn btn-outline-primary w-100 mb-3" name="action" value="message" type="submit">Envoyer le message</button>
+        {% if open_deal %}
+          <div class="bourse-counter">
+            <label class="form-label" for="id_price">Nouveau prix par unité</label>
+            <div class="d-flex gap-2">
+              <input class="form-control" type="number" min="0.01" step="0.01" id="id_price" name="price" value="{{ form.price.value|default:'' }}">
+              <select class="form-select" name="currency" aria-label="Devise">
+                {% for code in currencies %}<option value="{{ code }}" {% if code == cur %}selected{% endif %}>{{ code }}</option>{% endfor %}
+              </select>
+            </div>
+            {% for error in form.price.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+            <button class="btn btn-outline-primary w-100 mt-2" name="action" value="counter" type="submit">Faire une contre-offre</button>
+          </div>
+          <div class="d-flex gap-2 mt-3">
+            {% if can_accept %}
+              <button class="btn btn-primary flex-fill" name="action" value="accept" type="submit">✓ Accepter {{ price_text }}</button>
+            {% endif %}
+            <button class="btn btn-danger-soft flex-fill" name="action" value="decline" type="submit">Refuser</button>
+          </div>
+          {% if not can_accept %}<p class="form-text mt-2">Vous avez fait la dernière proposition : l'autre partie doit répondre.</p>{% endif %}
+        {% endif %}
+      </form>
+    </aside>
+  </div>
+{% endblock %}

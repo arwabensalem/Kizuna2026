@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crisis Lab · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Crisis Lab</p>
+  <h1>What if?</h1>
+  <p class="lead">Set the conditions, press Simulate, and the same synthetic crisis runs twice from identical starting conditions: once with nothing reacting, once with KIZUNA forecasting and controlling. Every figure is simulated.</p>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-4">
+      <form class="placeholder-card lab-controls" id="lab-form" novalidate>
+        <h2>Scenario</h2>
+        <div class="lab-scenarios mb-3" role="radiogroup" aria-label="Scenario">
+          {% for name in scenarios %}
+            <button class="lab-scenario{% if name == 'HEATWAVE' %} active{% endif %}" type="button" data-scenario="{{ name }}" role="radio" aria-checked="{% if name == 'HEATWAVE' %}true{% else %}false{% endif %}">{{ name }}</button>
+          {% endfor %}
+        </div>
+        <input type="hidden" name="scenario" value="HEATWAVE">
+
+        <h2>Conditions</h2>
+        <div class="lab-slider">
+          <label for="lab-temperature">Peak temperature <output data-for="temperature">{{ start.temperature }}</output> °C</label>
+          <input class="form-range" id="lab-temperature" name="temperature" type="range" min="{{ limits.temperature.0 }}" max="{{ limits.temperature.1 }}" step="1" value="{{ start.temperature }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-rainfall">Rainfall <output data-for="rainfall">{{ start.rainfall }}</output> mm/day</label>
+          <input class="form-range" id="lab-rainfall" name="rainfall" type="range" min="{{ limits.rainfall.0 }}" max="{{ limits.rainfall.1 }}" step="1" value="{{ start.rainfall }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-grid">Grid availability <output data-for="grid">{{ start.grid }}</output> %</label>
+          <input class="form-range" id="lab-grid" name="grid" type="range" min="{{ limits.grid.0 }}" max="{{ limits.grid.1 }}" step="5" value="{{ start.grid }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-solar">Solar production <output data-for="solar">{{ start.solar }}</output> %</label>
+          <input class="form-range" id="lab-solar" name="solar" type="range" min="{{ limits.solar.0 }}" max="{{ limits.solar.1 }}" step="5" value="{{ start.solar }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-water">Water availability <output data-for="water">{{ start.water }}</output> %</label>
+          <input class="form-range" id="lab-water" name="water" type="range" min="{{ limits.water.0 }}" max="{{ limits.water.1 }}" step="5" value="{{ start.water }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-soil">Soil moisture <output data-for="soil">{{ start.soil }}</output> %</label>
+          <input class="form-range" id="lab-soil" name="soil" type="range" min="{{ limits.soil.0 }}" max="{{ limits.soil.1 }}" step="1" value="{{ start.soil }}">
+        </div>
+        <div class="lab-slider">
+          <label for="lab-duration">Duration <output data-for="duration">{{ start.duration }}</output> h</label>
+          <input class="form-range" id="lab-duration" name="duration" type="range" min="{{ limits.duration.0 }}" max="{{ limits.duration.1 }}" step="6" value="{{ start.duration }}">
+        </div>
+        <button class="btn btn-primary lab-simulate w-100 mt-2" id="lab-simulate" type="submit">SIMULATE</button>
+        <p class="text-danger mt-2 mb-0" id="lab-error" role="alert" hidden></p>
+      </form>
+    </div>
+
+    <div class="col-lg-8">
+      <section class="lab-stage" id="lab-stage" aria-live="polite">
+        <div class="lab-stage-idle" id="lab-idle">
+          <p class="lab-stage-kicker">Crisis propagation</p>
+          <p class="lab-stage-title">Choose a scenario and press SIMULATE.</p>
+          <p class="mb-0">Both runs start from the same tank, battery, and soil levels and see the same weather and grid hours.</p>
+        </div>
+        <div class="lab-stage-run" id="lab-run" hidden>
+          <div class="lab-lanes">
+            <div class="lab-lane lab-lane-without">
+              <p class="lab-stage-kicker">Without KIZUNA</p>
+              <ol class="lab-chain" id="lab-propagation"></ol>
+            </div>
+            <div class="lab-lane lab-lane-with">
+              <p class="lab-stage-kicker">With KIZUNA</p>
+              <div class="lab-activated" id="lab-activated">KIZUNA ACTIVATED</div>
+              <div id="lab-response"></div>
+              <ul class="lab-side" id="lab-side"></ul>
+              <div class="lab-final" id="lab-final"></div>
+            </div>
+          </div>
+          <div class="d-flex justify-content-between align-items-center mt-3">
+            <p class="lab-note mb-0" id="lab-ai"></p>
+            <button class="btn btn-sm btn-outline-light" id="lab-replay" type="button">Replay</button>
+          </div>
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="lab-results" hidden>
+    <div class="row g-3 mb-4">
+      <div class="col-6 col-lg-3"><div class="lab-headline"><p>Water saved</p><strong data-headline="water"></strong><span data-headline-note="water"></span></div></div>
+      <div class="col-6 col-lg-3"><div class="lab-headline"><p>Energy recovered</p><strong data-headline="energy"></strong><span data-headline-note="energy"></span></div></div>
+      <div class="col-6 col-lg-3"><div class="lab-headline"><p>Crop protection</p><strong data-headline="crop"></strong><span data-headline-note="crop"></span></div></div>
+      <div class="col-6 col-lg-3"><div class="lab-headline"><p>Recovery time</p><strong data-headline="recovery"></strong><span data-headline-note="recovery"></span></div></div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-7">
+        <section class="placeholder-card">
+          <h2>Without vs with KIZUNA</h2>
+          <div class="lab-legend"><span class="lab-key lab-key-without"></span> Without KIZUNA <span class="lab-key lab-key-with ms-3"></span> With KIZUNA</div>
+          <div id="lab-bars"></div>
+        </section>
+      </div>
+      <div class="col-lg-5">
+        <section class="placeholder-card">
+          <h2>Affected nodes</h2>
+          <p class="lab-note-dark">Red nodes crossed their crisis line at some hour.</p>
+          <p class="lab-map-title">Without KIZUNA</p>
+          <div id="lab-map-without"></div>
+          <p class="lab-map-title mt-2">With KIZUNA</p>
+          <div id="lab-map-with"></div>
+        </section>
+      </div>
+    </div>
+
+    <div class="row g-4 mb-4">
+      <div class="col-lg-6">
+        <section class="placeholder-card">
+          <h2>Crop stress and soil moisture</h2>
+          <canvas id="lab-chart-crop" height="220"></canvas>
+        </section>
+      </div>
+      <div class="col-lg-6">
+        <section class="placeholder-card">
+          <h2>Home battery and tank</h2>
+          <canvas id="lab-chart-stock" height="220"></canvas>
+        </section>
+      </div>
+    </div>
+
+    <section class="placeholder-card mb-4">
+      <h2>What KIZUNA did</h2>
+      <p class="lab-note-dark">State changes recorded during the run with KIZUNA.</p>
+      <div class="table-responsive">
+        <table class="table table-sm mb-0">
+          <thead><tr><th>Hour</th><th>Action</th><th>Reason</th></tr></thead>
+          <tbody id="lab-events"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="placeholder-card mb-4">
+      <h2>How the two runs differ</h2>
+      <ul class="mb-2">
+        <li><strong>Without KIZUNA:</strong> irrigation keeps a fixed 10:00–13:00 timer on the grid, solar surplus is not stored, loads are not shed, and rain is not collected.</li>
+        <li><strong>With KIZUNA:</strong> the crop-stress model forecasts the next 3 hours, the simulated series gives the rain forecast, and the autopilot rules run the pump from grid, solar, or battery, store solar surplus, shed non-critical loads when the battery cannot carry them, collect rain, and limit home water to essentials when the tank is low.</li>
+      </ul>
+      <ul class="lab-rules mb-0" id="lab-rules"></ul>
+    </section>
+  </div>
+
+  {{ scenarios|json_script:"lab-presets" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/crisis.js' %}"></script>
+{% endblock %}

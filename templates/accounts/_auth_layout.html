@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block main_class %}kz-auth-page{% endblock %}
+
+{% block content %}
+<div class="kz-auth">
+  <aside class="kz-auth-side" aria-hidden="true">
+    <svg class="kz-scene" viewBox="0 0 600 800" preserveAspectRatio="xMidYMid slice" focusable="false">
+      <defs>
+        <linearGradient id="kz-sky" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#062e30"/><stop offset=".55" stop-color="#0b5c5c"/><stop offset="1" stop-color="#127a6c"/>
+        </linearGradient>
+        <radialGradient id="kz-sun" cx=".5" cy=".5" r=".5">
+          <stop offset="0" stop-color="#ff9a6b"/><stop offset=".65" stop-color="#e0503c"/><stop offset="1" stop-color="#e0503c" stop-opacity="0"/>
+        </radialGradient>
+        <linearGradient id="kz-sea" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#4cc3ff"/><stop offset="1" stop-color="#1d6fb8"/>
+        </linearGradient>
+        <linearGradient id="kz-field" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stop-color="#7cc46a"/><stop offset="1" stop-color="#3f7f37"/>
+        </linearGradient>
+      </defs>
+      <rect width="600" height="800" fill="url(#kz-sky)"/>
+      <g class="kz-stars" fill="#cfe9e5">
+        <circle cx="60" cy="80" r="1.5"/><circle cx="160" cy="40" r="1"/><circle cx="520" cy="70" r="1.6"/><circle cx="430" cy="140" r="1"/><circle cx="250" cy="110" r="1.2"/>
+      </g>
+      <!-- Soleil (énergie solaire) -->
+      <g class="kz-sun" transform="translate(470 190)">
+        <g class="kz-rays" stroke="#ffc94a" stroke-width="6" stroke-linecap="round" opacity=".75">
+          <line x1="0" y1="-120" x2="0" y2="-150"/><line x1="0" y1="120" x2="0" y2="150"/><line x1="-120" y1="0" x2="-150" y2="0"/><line x1="120" y1="0" x2="150" y2="0"/>
+          <line x1="85" y1="85" x2="106" y2="106"/><line x1="-85" y1="-85" x2="-106" y2="-106"/><line x1="85" y1="-85" x2="106" y2="-106"/><line x1="-85" y1="85" x2="-106" y2="106"/>
+        </g>
+        <circle r="150" fill="url(#kz-sun)" opacity=".55" class="kz-glow"/>
+        <circle r="92" fill="#e0503c"/>
+      </g>
+      <!-- Éclair -->
+      <path class="kz-bolt" transform="translate(470 190) scale(.62) translate(-306 -275)" d="M300 170 L262 280 L298 280 L270 380 L350 250 L312 250 L340 170 Z" fill="#ffc94a" stroke="#1b1b1b" stroke-width="5" stroke-linejoin="round"/>
+      <!-- Éolienne -->
+      <g transform="translate(548 400) scale(.8)">
+        <path d="M-5 0 L5 0 L9 230 L-9 230 Z" fill="#e6f4f1"/>
+        <g class="kz-blades" fill="#ffffff">
+          <path d="M0 0 L-7 -95 L0 -105 L7 -95 Z"/><path d="M0 0 L-7 -95 L0 -105 L7 -95 Z" transform="rotate(120)"/><path d="M0 0 L-7 -95 L0 -105 L7 -95 Z" transform="rotate(240)"/>
+          <circle r="9" fill="#cfe9e5"/>
+        </g>
+      </g>
+      <!-- Collines et champs (agriculture) -->
+      <path d="M0 560 Q150 500 300 545 T600 520 L600 800 L0 800 Z" fill="url(#kz-field)"/>
+      <g class="kz-rows" stroke="#2f6a2a" stroke-width="3" opacity=".5" fill="none">
+        <path d="M40 640 Q300 590 600 620"/><path d="M0 680 Q300 630 600 660"/><path d="M0 720 Q300 670 600 700"/>
+      </g>
+      <g class="kz-sprouts" fill="#2f6a2a">
+        <g transform="translate(360 600)"><path class="kz-leaf" d="M0 0 C-14 -20 -6 -42 0 -50 C6 -42 14 -20 0 0Z" fill="#5a9a3c"/></g>
+        <g transform="translate(420 610)"><path class="kz-leaf kz-leaf-2" d="M0 0 C-14 -20 -6 -42 0 -50 C6 -42 14 -20 0 0Z" fill="#6fb24c"/></g>
+        <g transform="translate(480 598)"><path class="kz-leaf" d="M0 0 C-14 -20 -6 -42 0 -50 C6 -42 14 -20 0 0Z" fill="#5a9a3c"/></g>
+        <g transform="translate(540 606)"><path class="kz-leaf kz-leaf-2" d="M0 0 C-14 -20 -6 -42 0 -50 C6 -42 14 -20 0 0Z" fill="#6fb24c"/></g>
+      </g>
+      <!-- Panneaux solaires -->
+      <g transform="translate(210 600) skewX(-18)">
+        <rect width="90" height="44" rx="4" fill="#1d3f6e" stroke="#cfe9e5" stroke-width="2"/>
+        <path d="M30 0 V44 M60 0 V44 M0 22 H90" stroke="#4cc3ff" stroke-width="1.5" opacity=".7"/>
+        <rect class="kz-shine" width="18" height="44" fill="#ffffff" opacity=".35"/>
+      </g>
+      <!-- Vagues (eau) -->
+      <g class="kz-waves">
+        <path class="kz-wave kz-wave-1" d="M0 730 Q50 710 100 730 T200 730 T300 730 T400 730 T500 730 T600 730 T700 730 T800 730 V800 H0 Z" fill="url(#kz-sea)" opacity=".85"/>
+        <path class="kz-wave kz-wave-2" d="M0 750 Q50 732 100 750 T200 750 T300 750 T400 750 T500 750 T600 750 T700 750 T800 750 V800 H0 Z" fill="#1d6fb8" opacity=".9"/>
+      </g>
+      <!-- Gouttes de pluie -->
+      <g class="kz-rain" stroke="#9be3ff" stroke-width="2.5" stroke-linecap="round" opacity=".7">
+        <line x1="80" y1="0" x2="72" y2="22"/><line x1="200" y1="0" x2="192" y2="22"/><line x1="330" y1="0" x2="322" y2="22"/><line x1="520" y1="0" x2="512" y2="22"/>
+      </g>
+    </svg>
+    <div class="kz-auth-side-inner">
+      <a class="kz-auth-brand" href="{% url 'home' %}"><img src="{% static 'img/kizuna-logo.png' %}" alt="" width="72" height="72"><span>KIZUNA</span></a>
+      <p class="kz-auth-tagline">L’eau, l’énergie et la terre,<br><span>reliées.</span></p>
+      <ul class="kz-auth-points">
+        <li><span class="kz-dot kz-dot-water"></span>Fuites détectées, facture SONEDE prédite</li>
+        <li><span class="kz-dot kz-dot-energy"></span>Solaire intelligent, facture STEG maîtrisée</li>
+        <li><span class="kz-dot kz-dot-food"></span>Arrosage au bon moment, vente directe à l’export</li>
+      </ul>
+    </div>
+  </aside>
+
+  <section class="kz-auth-main">
+    <div class="kz-auth-card">
+      <img class="kz-auth-mobile-logo" src="{% static 'img/kizuna-logo-96.png' %}" alt="" width="56" height="56">
+      {% block auth_steps %}{% endblock %}
+      <p class="kz-auth-kicker">{% block auth_kicker %}Mon compte{% endblock %}</p>
+      <h1 class="kz-auth-title">{% block auth_title %}{% endblock %}</h1>
+      {% block auth_intro %}{% endblock %}
+      {% block auth_body %}{% endblock %}
+    </div>
+    {% block auth_after %}{% endblock %}
+  </section>
+</div>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ heading }} · Vendre et échanger · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker"><a href="{% url 'market:board' %}">← Vendre et échanger</a></p>
+  <h1>{{ heading }}</h1>
+  <form class="market-form" method="post">
+    {% csrf_token %}
+    {% include "includes/fields.html" %}
+    <button class="btn btn-primary btn-lg" type="submit">Publier l’annonce</button>
+    <a class="btn btn-outline-primary btn-lg" href="{% url 'market:board' %}">Annuler</a>
+  </form>
+{% endblock %}

@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}{{ title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Ma ferme</p>
+  <h1>{{ title }}</h1>
+  <form method="post" class="auth-form" novalidate>
+    {% csrf_token %}
+    {% include "includes/fields.html" %}
+    <button class="btn btn-primary btn-lg" type="submit">Enregistrer</button>
+    <a class="btn btn-outline-primary btn-lg" href="{{ cancel_url }}">Annuler</a>
+  </form>
+{% endblock %}

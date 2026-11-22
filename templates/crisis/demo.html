@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Demo · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">DEMO MODE</p>
+  <h1>KIZUNA</h1>
+  <p class="lead">Press start. The same 24 chapters play every time, and every panel on this page follows the chapter.</p>
+  <p class="network-label" role="note">{{ demo.label }}</p>
+
+  <div class="day-controls demo-controls">
+    <button class="btn btn-primary" type="button" id="demo-kizuna">START KIZUNA</button>
+    <button class="btn btn-outline-primary" type="button" id="demo-start">START DEMO</button>
+    <button class="btn btn-outline-secondary" type="button" id="demo-pause">PAUSE</button>
+    <button class="btn btn-outline-secondary" type="button" id="demo-reset">RESET</button>
+  </div>
+
+  <section id="demo-stage">
+    <p class="demo-count" id="demo-count"></p>
+    <p class="day-time" id="demo-time"></p>
+    <h2 id="demo-title"></h2>
+    <p id="demo-narration"></p>
+    <p class="day-note" id="demo-source"></p>
+
+    <div class="demo-layout">
+      <article class="demo-panel" data-panel="timeline">
+        <h3>Event timeline</h3>
+        <ol class="demo-rail" id="demo-rail"></ol>
+        <ul id="demo-events"></ul>
+        <h3>Propagation</h3>
+        <ul class="day-prop" id="demo-prop"></ul>
+      </article>
+
+      <div class="demo-panels">
+        <article class="demo-panel" data-panel="dashboard">
+          <h3>Dashboard</h3>
+          <dl id="demo-dashboard"></dl>
+        </article>
+        <article class="demo-panel" data-panel="twin">
+          <h3>Digital twin</h3>
+          <svg id="demo-svg" viewBox="0 0 280 180" role="img" aria-label="Simulated home">
+            <rect x="40" y="78" width="150" height="78" fill="#fff" stroke="#16302a"></rect>
+            <polygon points="32,78 115,28 198,78" fill="#0f6e6e"></polygon>
+            <rect id="demo-solar" x="78" y="44" width="74" height="16" fill="#e0a526"></rect>
+            <rect x="214" y="36" width="40" height="110" fill="#fff" stroke="#16302a"></rect>
+            <rect id="demo-tank" x="218" y="40" width="32" height="100" fill="#0f6e6e"></rect>
+            <circle id="demo-valve" cx="28" cy="116" r="10" fill="#1f8f6a"></circle>
+            <rect id="demo-soil" x="40" y="162" width="150" height="8" fill="#1f8f6a"></rect>
+            <text id="demo-pump" x="48" y="122" fill="#16302a" font-size="13">Pump</text>
+            <text id="demo-rain" x="214" y="24" fill="#0f6e6e" font-size="12"></text>
+          </svg>
+          <dl id="demo-twin"></dl>
+        </article>
+        <article class="demo-panel" data-panel="brain">
+          <h3>KIZUNA Brain</h3>
+          <ul id="demo-brain"></ul>
+        </article>
+        <article class="demo-panel" data-panel="network">
+          <h3>Resource network</h3>
+          <ul class="day-flows" id="demo-flows"></ul>
+        </article>
+        <article class="demo-panel demo-chart-panel" data-panel="chart">
+          <h3>Charts</h3>
+          <p class="day-note">Crop stress and the resilience score for each chapter. Both are 0–100.</p>
+          <canvas id="demo-chart" height="140"></canvas>
+        </article>
+        <article class="demo-panel demo-map-panel" id="demo-map" data-panel="map" hidden>
+          <h3 id="demo-map-title">Tunisia</h3>
+          <div id="demo-places" hidden></div>
+          <div id="demo-leaflet" data-boundaries="{% static 'data/tunisia-governorates.geojson' %}" hidden></div>
+          <p class="demo-national" id="demo-national" hidden></p>
+          <p class="day-note" id="demo-map-note"></p>
+        </article>
+      </div>
+    </div>
+  </section>
+
+  <section class="demo-finale" id="demo-finale" hidden>
+    <p class="demo-finale-mark">KIZUNA</p>
+    <h2>A LIVING DIGITAL TWIN<br>FOR A RESILIENT TUNISIA</h2>
+    <blockquote>{{ demo.finale.quote }}</blockquote>
+    <p class="demo-finale-end">{{ demo.finale.headline }}</p>
+    <dl class="day-end-metrics">
+      <div><dt>Water saved</dt><dd>{{ demo.finale.summary.water_saved_l }} L</dd><p>{{ demo.finale.summary.rules.water_saved_l }}</p></div>
+      <div><dt>Energy recovered</dt><dd>{{ demo.finale.summary.energy_recovered_wh }} Wh</dd><p>{{ demo.finale.summary.rules.energy_recovered_wh }}</p></div>
+      <div><dt>Crops protected</dt><dd>{{ demo.finale.summary.crops_protected }} of {{ demo.finale.summary.crops_hours }} hours</dd><p>{{ demo.finale.summary.rules.crops_protected }}</p></div>
+      <div><dt>Homes stabilized</dt><dd>{{ demo.finale.summary.homes_stabilized }}</dd><p>{{ demo.finale.summary.rules.homes_stabilized }}</p></div>
+      <div><dt>Water recovered</dt><dd>{{ demo.finale.summary.water_recovered_l }} L</dd><p>{{ demo.finale.summary.rules.water_recovered_l }}</p></div>
+    </dl>
+  </section>
+  {{ demo|json_script:"kizuna-demo" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/demo.js' %}"></script>
+{% endblock %}

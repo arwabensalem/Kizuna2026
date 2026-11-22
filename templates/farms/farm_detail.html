@@ -1,0 +1,227 @@
+{% extends "base.html" %}
+{% load static kizuna_fr %}
+
+{% block title %}{{ farm.name }} · KIZUNA{% endblock %}
+{% block main_class %}kz-farm-page{% endblock %}
+
+{% block content %}
+<header class="kz-page-hero">
+  <div class="container kz-page-hero-inner">
+    <a class="kz-back" href="{% url 'farms:list' %}"><svg class="kz-i" aria-hidden="true"><use href="#i-back"></use></svg> Mes fermes</a>
+    <div class="d-flex flex-wrap justify-content-between align-items-end gap-4">
+      <div>
+        <h1 class="kz-page-title">{{ farm.name }}</h1>
+        <ul class="kz-chips">
+          <li><svg class="kz-i" aria-hidden="true"><use href="#i-map"></use></svg>{{ farm.location|default:"Lieu non précisé" }}</li>
+          <li><svg class="kz-i" aria-hidden="true"><use href="#i-sprout"></use></svg>{{ farm.area_m2|floatformat:"0g" }} m²{% if farm.area_m2 >= 10000 %} · {% widthratio farm.area_m2 10000 1 %} ha{% endif %}</li>
+          <li>Sol {{ farm.get_soil_type_display|fr_choice|lower }}</li>
+          <li><svg class="kz-i" aria-hidden="true"><use href="#i-drop"></use></svg>{{ farm.get_irrigation_type_display|fr_choice }}</li>
+        </ul>
+      </div>
+      <div class="kz-hero-actions">
+        <a class="btn kz-btn-light" href="{% url 'farms:advice' farm.pk %}"><svg class="kz-i" aria-hidden="true"><use href="#i-drop"></use></svg> Quand arroser et récolter ?</a>
+        <a class="btn kz-btn-ghost" href="{% url 'farms:edit' farm.pk %}"><svg class="kz-i" aria-hidden="true"><use href="#i-settings"></use></svg> Modifier</a>
+        <form method="post" action="{% url 'farms:delete' farm.pk %}" data-confirm="Supprimer la ferme « {{ farm.name }} » avec toutes ses cultures, capteurs et réservoirs ? Cette action est définitive.">
+          {% csrf_token %}
+          <button class="btn kz-btn-ghost" type="submit" aria-label="Supprimer la ferme"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg></button>
+        </form>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="container py-4 py-lg-5">
+  <div class="d-flex flex-wrap align-items-center justify-content-between gap-2 mb-3">
+    <h2 class="mb-0">En ce moment</h2>
+    <span class="sim-flag">Simulation</span>
+  </div>
+  <div class="kz-kpis mb-5">
+    <article class="kz-kpi kz-kpi-water">
+      <span class="kz-kpi-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-drop"></use></svg></span>
+      <p class="kz-kpi-label">Humidité du sol</p>
+      <p class="kz-kpi-value"><span data-count="{{ snapshot.soil_moisture }}">{{ snapshot.soil_moisture }}</span><small>%</small></p>
+      <div class="meter" data-meter="{{ snapshot.soil_moisture }}"><div class="meter-bar"></div></div>
+    </article>
+    <article class="kz-kpi kz-kpi-tank">
+      <span class="kz-kpi-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-flow"></use></svg></span>
+      <p class="kz-kpi-label">Réservoir</p>
+      <p class="kz-kpi-value"><span data-count="{{ snapshot.tank_percent }}">{{ snapshot.tank_percent }}</span><small>%</small></p>
+      <div class="meter" data-meter="{{ snapshot.tank_percent }}"><div class="meter-bar"></div></div>
+    </article>
+    <article class="kz-kpi kz-kpi-sun">
+      <span class="kz-kpi-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-sun"></use></svg></span>
+      <p class="kz-kpi-label">Production solaire</p>
+      <p class="kz-kpi-value"><span data-count="{{ snapshot.solar_watts }}">{{ snapshot.solar_watts }}</span><small>W</small></p>
+      <p class="kz-kpi-note">Capacité {{ snapshot.solar_capacity_watts }} W</p>
+    </article>
+    <article class="kz-kpi kz-kpi-need">
+      <span class="kz-kpi-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-rain"></use></svg></span>
+      <p class="kz-kpi-label">Besoin en eau estimé</p>
+      <p class="kz-kpi-value"><span data-count="{{ snapshot.water_liters_per_day }}">{{ snapshot.water_liters_per_day }}</span><small>L/jour</small></p>
+      <p class="kz-kpi-note">Irrigation : {{ snapshot.irrigation_status|fr|lower }}</p>
+    </article>
+    <article class="kz-kpi kz-kpi-stress">
+      <span class="kz-kpi-icon"><svg class="kz-i" aria-hidden="true"><use href="#i-alert"></use></svg></span>
+      <p class="kz-kpi-label">Stress des cultures</p>
+      <p class="kz-kpi-value"><span data-count="{{ snapshot.crop_stress }}">{{ snapshot.crop_stress }}</span><small>/ 100</small></p>
+      <p class="kz-kpi-note">État : {{ snapshot.crop_status|fr|lower }}</p>
+    </article>
+  </div>
+
+  <div class="row g-4 mb-5">
+    <div class="col-lg-6">
+      <section class="kz-card h-100" aria-labelledby="t-crops">
+        <div class="kz-card-head">
+          <div><h2 id="t-crops">Mes cultures</h2><p>{{ planted_m2 }} m² cultivés sur {{ farm.area_m2|floatformat:"0g" }} m² ({{ planted_share }} %)</p></div>
+          <a class="btn btn-outline-primary btn-sm" href="{% url 'farms:edit' farm.pk %}#etape-cultures">+ Ajouter</a>
+        </div>
+        {% if crops %}
+          <div class="kz-stack" role="img" aria-label="Répartition des cultures">
+            {% for crop in crops %}<span class="kz-crop-{{ crop.kind }}" style="flex: {{ crop.share|stringformat:'f' }} 1 0" title="{{ crop.name }} · {{ crop.share }} %"></span>{% endfor %}
+            {% if free_share %}<span class="kz-stack-free" style="flex: {{ free_share|stringformat:'f' }} 1 0" title="Non cultivé · {{ free_m2 }} m²"></span>{% endif %}
+          </div>
+          <ul class="kz-crop-list">
+            {% for crop in crops %}
+              <li>
+                <span class="kz-crop-dot kz-crop-{{ crop.kind }}" aria-hidden="true"></span>
+                <div class="flex-grow-1">
+                  <strong>{{ crop.name }}</strong>
+                  <span class="text-secondary"> · {{ crop.get_kind_display|fr_choice }} · {{ crop.get_stage_display|fr_choice|lower }}</span>
+                  <div class="small text-secondary">{{ crop.area_m2|floatformat:"0g" }} m² · {{ crop.share }} % de la ferme</div>
+                </div>
+                <span class="kz-row-actions">
+                  <a class="btn btn-sm btn-outline-primary" href="{% url 'farms:crop_edit' crop.pk %}">Modifier</a>
+                  <form class="d-inline" method="post" action="{% url 'farms:crop_delete' crop.pk %}" data-confirm="Retirer la culture « {{ crop.name }} » ?">{% csrf_token %}<button class="btn btn-sm btn-danger-soft" type="submit" aria-label="Supprimer {{ crop.name }}"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg></button></form>
+                </span>
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <div class="kz-empty"><p>Aucune culture pour le moment.</p><a class="btn btn-primary" href="{% url 'farms:edit' farm.pk %}#etape-cultures">Ajouter mes cultures</a></div>
+        {% endif %}
+      </section>
+    </div>
+    <div class="col-lg-6">
+      <section class="kz-card h-100" aria-labelledby="t-map">
+        <div class="kz-card-head">
+          <div><h2 id="t-map">Position en Tunisie</h2>
+            <p>{% if point %}{{ point.0|floatformat:4 }}, {{ point.1|floatformat:4 }}{% if not point.2 %} · centre de {{ farm.location }}{% endif %}{% else %}Position inconnue{% endif %}</p></div>
+          {% if not point or not point.2 %}<a class="btn btn-outline-primary btn-sm" href="{% url 'farms:edit' farm.pk %}#etape-lieu">Placer précisément</a>{% endif %}
+        </div>
+        {% if point %}
+          <div class="farm-map farm-map-view" data-lat="{{ point.0|stringformat:'f' }}" data-lng="{{ point.1|stringformat:'f' }}" data-exact="{{ point.2|yesno:'1,0' }}" role="application" aria-label="Emplacement de la ferme sur la carte de la Tunisie"></div>
+        {% else %}
+          <div class="kz-empty"><p>Indiquez la ville de la ferme pour la voir sur la carte.</p></div>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+
+  <section class="kz-card" aria-labelledby="t-equip">
+    <div class="kz-card-head"><div><h2 id="t-equip">Équipements</h2><p>Capteurs, irrigation, réservoirs et panneaux solaires.</p></div></div>
+    <ul class="nav kz-tabs" role="tablist">
+      <li class="nav-item" role="presentation"><button class="nav-link active" data-bs-toggle="tab" data-bs-target="#tab-sensors" type="button" role="tab" aria-controls="tab-sensors" aria-selected="true"><svg class="kz-i" aria-hidden="true"><use href="#i-spark"></use></svg> Capteurs <span class="kz-count">{{ sensors|length }}</span></button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-irrigation" type="button" role="tab" aria-controls="tab-irrigation" aria-selected="false"><svg class="kz-i" aria-hidden="true"><use href="#i-drop"></use></svg> Irrigation <span class="kz-count">{{ systems|length }}</span></button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-tanks" type="button" role="tab" aria-controls="tab-tanks" aria-selected="false"><svg class="kz-i" aria-hidden="true"><use href="#i-flow"></use></svg> Réservoirs <span class="kz-count">{{ tanks|length }}</span></button></li>
+      <li class="nav-item" role="presentation"><button class="nav-link" data-bs-toggle="tab" data-bs-target="#tab-solar" type="button" role="tab" aria-controls="tab-solar" aria-selected="false"><svg class="kz-i" aria-hidden="true"><use href="#i-sun"></use></svg> Solaire <span class="kz-count">{{ solar_units|length }}</span></button></li>
+    </ul>
+    <div class="tab-content pt-3">
+      <div class="tab-pane fade show active" id="tab-sensors" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h5 mb-0">Capteurs</h3>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'farms:sensor_create' %}?farm={{ farm.pk }}">+ Ajouter un capteur</a>
+      </div>
+      {% if sensors %}
+        <ul class="list-group">
+          {% for sensor in sensors %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{% if sensor.label %}{{ sensor.label }}{% else %}{{ sensor.get_kind_display|fr_choice }}{% endif %} <span class="text-secondary">· {{ sensor.unit }} · {% if sensor.is_active %}actif{% else %}inactif{% endif %}</span></span>
+              <span class="kz-row-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'farms:sensor_edit' sensor.pk %}">Modifier</a>
+                <form class="d-inline" method="post" action="{% url 'farms:sensor_delete' sensor.pk %}">{% csrf_token %}<button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button></form>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">Aucun capteur pour le moment.</p>
+      {% endif %}
+    </div>
+      <div class="tab-pane fade" id="tab-irrigation" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h5 mb-0">Irrigation</h3>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'farms:irrigation_create' %}?farm={{ farm.pk }}">+ Ajouter</a>
+      </div>
+      {% if systems %}
+        <ul class="list-group">
+          {% for system in systems %}
+            <li class="list-group-item">
+              <div class="d-flex justify-content-between">
+                <strong>{{ system.name }}</strong>
+                <span>{% if system.is_active %}<span class="badge text-bg-success">En marche</span>{% else %}<span class="badge text-bg-secondary">À l’arrêt</span>{% endif %}</span>
+              </div>
+              <p class="mb-1">{{ system.get_method_display|fr_choice }} · {{ system.flow_liters_per_hour }} L/h</p>
+              <form class="d-inline" method="post" action="{% url 'farms:irrigation_toggle' system.pk %}">
+                {% csrf_token %}
+                <input type="hidden" name="next" value="{{ request.path }}">
+                <button class="btn btn-sm btn-outline-primary" type="submit">{% if system.is_active %}Arrêter{% else %}Démarrer{% endif %}</button>
+              </form>
+              <a class="btn btn-sm btn-outline-primary" href="{% url 'farms:irrigation_edit' system.pk %}">Modifier</a>
+              <form class="d-inline" method="post" action="{% url 'farms:irrigation_delete' system.pk %}">{% csrf_token %}<button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button></form>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">Aucun système d'irrigation. Type prévu : {{ farm.get_irrigation_type_display|fr_choice|lower }}.</p>
+      {% endif %}
+    </div>
+      <div class="tab-pane fade" id="tab-tanks" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h5 mb-0">Réservoirs</h3>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'farms:tank_create' %}?farm={{ farm.pk }}">+ Ajouter</a>
+      </div>
+      {% if tanks %}
+        <ul class="list-group">
+          {% for tank in tanks %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ tank.name }} <span class="text-secondary">{{ tank.capacity_liters }} L</span></span>
+              <span class="kz-row-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'farms:tank_edit' tank.pk %}">Modifier</a>
+                <form class="d-inline" method="post" action="{% url 'farms:tank_delete' tank.pk %}">{% csrf_token %}<button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button></form>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">Capacité utilisée : {{ farm.tank_capacity_liters }} L (valeur de la ferme).</p>
+      {% endif %}
+    </div>
+      <div class="tab-pane fade" id="tab-solar" role="tabpanel">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <h3 class="h5 mb-0">Panneaux solaires</h3>
+        <a class="btn btn-outline-primary btn-sm" href="{% url 'farms:solar_create' %}?farm={{ farm.pk }}">+ Ajouter</a>
+      </div>
+      {% if solar_units %}
+        <ul class="list-group">
+          {% for unit in solar_units %}
+            <li class="list-group-item d-flex justify-content-between align-items-center">
+              <span>{{ unit.name }} <span class="text-secondary">{{ unit.capacity_watts }} W</span></span>
+              <span class="kz-row-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{% url 'farms:solar_edit' unit.pk %}">Modifier</a>
+                <form class="d-inline" method="post" action="{% url 'farms:solar_delete' unit.pk %}">{% csrf_token %}<button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button></form>
+              </span>
+            </li>
+          {% endfor %}
+        </ul>
+      {% else %}
+        <p class="text-muted">Puissance utilisée : {{ farm.solar_capacity_watts }} W (valeur de la ferme).</p>
+      {% endif %}
+    </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/farm.js' %}?v=pro3"></script>
+{% endblock %}

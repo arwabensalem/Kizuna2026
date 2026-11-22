@@ -1,0 +1,18 @@
+{% comment %}Alertes et conseils du moment. Attend « advice » (apps.homes.advice.home_advice).{% endcomment %}
+{% if advice.tips %}
+<section class="kz-advice mb-4" aria-labelledby="kz-advice-title">
+  <h2 id="kz-advice-title" class="mb-3">Alertes et conseils</h2>
+  <ul class="list-unstyled d-grid gap-2 mb-0">
+    {% for tip in advice.tips %}
+    <li class="kz-tip kz-tip-{{ tip.level }}">
+      <svg class="kz-i" aria-hidden="true"><use href="#i-{{ tip.icon }}"></use></svg>
+      <div>
+        <strong>{{ tip.title }}</strong>
+        <p class="mb-0">{{ tip.text }}</p>
+        {% if tip.link %}<a class="btn btn-sm btn-outline-danger mt-2" href="{{ tip.link }}">{{ tip.action }}</a>{% endif %}
+      </div>
+    </li>
+    {% endfor %}
+  </ul>
+</section>
+{% endif %}

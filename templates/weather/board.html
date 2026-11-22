@@ -1,0 +1,265 @@
+{% extends "base.html" %}
+{% load kizuna_fr %}
+
+{% block title %}Météo · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Météo</p>
+  <h1>Météo et préparation</h1>
+  <p class="kz-help"><svg class="kz-i" aria-hidden="true"><use href="#i-info"></use></svg><span>C'est une simulation : aucune station météo n'est branchée. Choisissez un scénario (par exemple « pluie »), puis avancez heure par heure : KIZUNA prépare votre maison et récupère l'eau de pluie dans le réservoir.</span></p>
+
+  {% if errors %}
+    <div class="alert alert-danger">
+      {% for error in errors %}
+        <div>{{ error }}</div>
+      {% endfor %}
+    </div>
+  {% endif %}
+
+  {% if not home and not farm %}
+    <section class="placeholder-card">
+      <h2>Pas encore de maison ni de ferme</h2>
+      <p class="mb-0">Ajoutez une maison ou une ferme, puis revenez ici pour lancer une simulation météo.</p>
+    </section>
+  {% else %}
+    <form class="row g-3 mb-4" method="get" action="{% url 'weather:board' %}">
+      {% if homes %}
+        <div class="col-md-5">
+          <label class="form-label" for="home-select">Maison</label>
+          <select class="form-select" id="home-select" name="home">
+            <option value="">None</option>
+            {% for item in homes %}
+              <option value="{{ item.pk }}" {% if home and item.pk == home.pk %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      {% if farms %}
+        <div class="col-md-5">
+          <label class="form-label" for="farm-select">Ferme</label>
+          <select class="form-select" id="farm-select" name="farm">
+            <option value="">None</option>
+            {% for item in farms %}
+              <option value="{{ item.pk }}" {% if farm and item.pk == farm.pk %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-primary" type="submit">Afficher</button>
+      </div>
+    </form>
+
+    <section class="placeholder-card mb-4" id="digital-twin">
+      <h2>Jumeau numérique</h2>
+      <p>Le chemin de l'eau de pluie, du toit jusqu'au réservoir (simulation).</p>
+      <div class="twin-path">
+        <div class="twin-node">
+          <strong>Toit</strong>
+          <div>{{ collection.roof_area_m2 }} m²</div>
+        </div>
+        <div class="twin-arrow" aria-hidden="true">→</div>
+        <div class="twin-node">
+          <strong>Récupération d'eau de pluie</strong>
+          <div>{{ system_state|fr }}</div>
+        </div>
+        <div class="twin-arrow" aria-hidden="true">→</div>
+        <div class="twin-node">
+          <strong>Réservoir</strong>
+          <div id="tank-level">{{ collection.tank_liters }} / {{ collection.tank_capacity_liters }} L</div>
+        </div>
+      </div>
+      <p class="twin-recovered" id="recovered-water">{{ recovered_text }}</p>
+      <p class="mb-0">Total stocké pendant cette simulation : {{ run_total }} L.</p>
+    </section>
+
+    {% if last_actions %}
+      <h2>Ce qui vient de se passer</h2>
+      <div class="row g-3 mb-4">
+        {% for action in last_actions %}
+          <div class="col-md-6">
+            <article class="placeholder-card" {% if forloop.first %}id="latest-action"{% endif %}>
+              <p class="kicker">{{ action.mode }}</p>
+              <h3>{{ action.action }}</h3>
+              <p>{{ action.reason }}</p>
+              <p class="mb-1">Équipement : {{ action.actuator }}</p>
+              <p class="mb-1">{{ action.previous_state }} → {{ action.new_state }}</p>
+              <p class="mb-0">{{ action.created_at }}</p>
+            </article>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <section class="placeholder-card mb-4">
+      <h2 id="weather-mode">Heure {% if timeline %}{{ timeline.hour }}{% else %}—{% endif %} · {{ status }}</h2>
+      <p>Si de la pluie est prévue dans les 4 heures, KIZUNA se prépare : il coupe l'arrosage inutile, prépare la récupération d'eau et vérifie la place dans le réservoir. <strong>Autorisez la récupération avant la pluie</strong> pour que le réservoir se remplisse.</p>
+      <form method="post" action="{% url 'weather:start' %}">
+        {% csrf_token %}
+        {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+        {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+        <label class="form-label" for="scenario">Scénario</label>
+        <select class="form-select mb-3" id="scenario" name="scenario">
+          {% for key, label in scenario_choices %}
+            <option value="{{ key }}" {% if timeline and timeline.scenario == key %}selected{% endif %}>{{ label }}</option>
+          {% endfor %}
+        </select>
+        <button class="btn btn-primary" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-play"></use></svg> Lancer la simulation</button>
+      </form>
+      {% if can_advance %}
+        <form class="mt-3" method="post" action="{% url 'weather:advance' %}">
+          {% csrf_token %}
+          {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+          {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+          <input type="hidden" name="timeline" value="{{ timeline.pk }}">
+          <button class="btn btn-outline-primary" id="advance-hour" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-fastforward"></use></svg> Avancer d'une heure</button>
+        </form>
+      {% endif %}
+      <ul class="mt-3 mb-0">
+        {% for item in scenarios.values %}
+          <li><strong>{{ item.label }}.</strong> {{ item.summary }}</li>
+        {% endfor %}
+      </ul>
+    </section>
+
+    <section class="placeholder-card mb-4">
+      <h2>Récupération de l'eau de pluie</h2>
+      <p>1 mm de pluie sur 1 m² de toit donne 1 litre. La part récupérée (entre 0 et 1) indique combien de cette eau arrive vraiment dans le réservoir.</p>
+      <form class="row g-3" method="post" action="{% url 'weather:collection' %}">
+        {% csrf_token %}
+        {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+        {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+        <div class="col-md-3">
+          <label class="form-label" for="roof">Surface du toit (m²)</label>
+          <input class="form-control" id="roof" name="roof_area_m2" type="number" min="1" max="500" step="0.1" value="{{ posted.roof_area_m2|default:collection.roof_area_m2 }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="share">Part récupérée (0 à 1)</label>
+          <input class="form-control" id="share" name="capture_share" type="number" min="0" max="1" step="0.01" value="{{ posted.capture_share|default:collection.capture_share }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="capacity">Capacité du réservoir (L)</label>
+          <input class="form-control" id="capacity" name="tank_capacity_liters" type="number" min="100" max="100000" step="1" value="{{ posted.tank_capacity_liters|default:collection.tank_capacity_liters }}" required>
+        </div>
+        <div class="col-md-3">
+          <label class="form-label" for="tank">Eau dans le réservoir (L)</label>
+          <input class="form-control" id="tank" name="tank_liters" type="number" min="0" max="100000" step="0.1" value="{{ posted.tank_liters|default:collection.tank_liters }}" required>
+        </div>
+        <div class="col-12">
+          <button class="btn btn-outline-primary" type="submit">Enregistrer</button>
+        </div>
+      </form>
+      <form class="mt-3" method="post" action="{% url 'weather:authorize' %}">
+        {% csrf_token %}
+        {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+        {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+        <input type="hidden" name="collection" value="{{ collection.pk }}">
+        <input type="hidden" name="authorized" value="{% if collection.authorized %}off{% else %}on{% endif %}">
+        <button class="btn btn-outline-primary" id="authorize-collection" type="submit">
+          {% if collection.authorized %}Récupération autorisée · retirer{% else %}Autoriser la récupération{% endif %}
+        </button>
+      </form>
+    </section>
+
+    <h2>Prévisions heure par heure</h2>
+    {% if hours %}
+      <div class="table-responsive mb-4">
+        <table class="table">
+          <caption>Scénario : {{ timeline.get_scenario_display|default:timeline.scenario|fr }} (simulation, pas une vraie prévision).</caption>
+          <thead>
+            <tr>
+              <th>Heure</th>
+              <th>Température</th>
+              <th>Humidité</th>
+              <th>Risque de pluie</th>
+              <th>Pluie</th>
+              <th>Ensoleillement</th>
+              <th>Vent</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for hour in hours %}
+              <tr {% if timeline.hour == hour.hour %}id="current-hour" class="table-active"{% endif %}>
+                <td>{{ hour.hour }}</td>
+                <td>{{ hour.temperature_c }} °C</td>
+                <td>{{ hour.humidity_percent }}%</td>
+                <td>{{ hour.rainfall_probability }}%</td>
+                <td>{{ hour.rainfall_mm }} mm</td>
+                <td>{{ hour.solar_radiation_wm2 }} W/m²</td>
+                <td>{{ hour.wind_kmh }} km/h</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">Pas encore de simulation. Lancez un scénario pour voir les 12 prochaines heures.</p>
+    {% endif %}
+
+    {% if preparation %}
+      <h2>Préparation à la pluie</h2>
+      <div class="table-responsive mb-4">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Action</th>
+              <th>Équipement</th>
+              <th>Avant</th>
+              <th>Après</th>
+              <th>Raison</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for action in preparation %}
+              <tr>
+                <td>{{ action.created_at }}</td>
+                <td>{{ action.mode }}</td>
+                <td>{{ action.action }}</td>
+                <td>{{ action.actuator }}</td>
+                <td>{{ action.previous_state }}</td>
+                <td>{{ action.new_state }}</td>
+                <td>{{ action.reason }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+
+    {% if actions %}
+      <h2>Historique des actions</h2>
+      <div class="table-responsive mb-4">
+        <table class="table">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Heure</th>
+              <th>Mode</th>
+              <th>Action</th>
+              <th>Équipement</th>
+              <th>Avant</th>
+              <th>Après</th>
+              <th>Raison</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for action in actions %}
+              <tr>
+                <td>{{ action.created_at }}</td>
+                <td>{{ action.hour }}</td>
+                <td>{{ action.mode }}</td>
+                <td>{{ action.action }}</td>
+                <td>{{ action.actuator }}</td>
+                <td>{{ action.previous_state }}</td>
+                <td>{{ action.new_state }}</td>
+                <td>{{ action.reason }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% endif %}
+  {% endif %}
+{% endblock %}

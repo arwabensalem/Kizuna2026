@@ -1,0 +1,130 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Sensor simulation · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Synthetic clock</p>
+  <h1>Sensor simulation</h1>
+  <p class="lead">{{ state.label }} One step is one simulated hour. The clock starts at 1 June 2026, 00:00 Africa/Tunis, which is a chosen origin for this series.</p>
+  <p><span class="sim-flag">Simulated</span></p>
+
+  <section class="placeholder-card mb-4" data-live="simulation">
+    <div class="row g-3 align-items-end">
+      <div class="col-md-3">
+        <p class="mb-1">Hour</p>
+        <p class="metric-value mb-0" data-clock-hour>{{ state.hour }}</p>
+      </div>
+      <div class="col-md-5">
+        <p class="mb-1">Simulation time</p>
+        <p class="mb-0" data-clock-time>{{ state.simulated_at }}</p>
+      </div>
+      <div class="col-md-4">
+        <p class="mb-1">Crisis state</p>
+        <p class="mb-0"><span class="sim-flag" data-crisis>{{ state.crisis_state }}</span></p>
+      </div>
+      <div class="col-md-4">
+        <label class="form-label" for="scenario">Scenario for the next hour</label>
+        <select class="form-select" id="scenario">
+          {% for name in scenarios %}
+            <option value="{{ name }}" {% if name == state.scenario %}selected{% endif %}>{{ name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-3">
+        <label class="form-label" for="seed">Seed on reset</label>
+        <input class="form-control" id="seed" type="number" min="0" max="2000000000" value="{{ state.seed }}">
+      </div>
+      <div class="col-md-5 d-flex gap-2">
+        <button class="btn btn-primary" id="advance-simulation" type="button">Advance 1 hour</button>
+        <button class="btn btn-primary" type="button" data-run-clock>Run clock</button>
+        <button class="btn btn-outline-primary" id="reset-simulation" type="button">Reset</button>
+      </div>
+    </div>
+    <p class="mt-3 mb-0 text-danger" id="simulation-error" hidden></p>
+  </section>
+
+  <div class="row g-3">
+    <div class="col-lg-4">
+      <section class="placeholder-card">
+        <h2>Home <span class="sim-flag">Simulated</span></h2>
+        <table class="table mb-0">
+          <tbody>
+            {% for key, sensor in state.sensors.home.items %}
+              <tr>
+                <th scope="row">{{ sensor.label }}</th>
+                <td data-reading="home.{{ key }}">{{ sensor.value }} {{ sensor.unit }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="col-lg-4">
+      <section class="placeholder-card">
+        <h2>Farm <span class="sim-flag">Simulated</span></h2>
+        <table class="table mb-0">
+          <tbody>
+            {% for key, sensor in state.sensors.farm.items %}
+              <tr>
+                <th scope="row">{{ sensor.label }}</th>
+                <td data-reading="farm.{{ key }}">{{ sensor.value }} {{ sensor.unit }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="col-lg-4">
+      <section class="placeholder-card">
+        <h2>Grid <span class="sim-flag">Simulated</span></h2>
+        <table class="table mb-0">
+          <tbody>
+            {% for key, sensor in state.sensors.grid.items %}
+              <tr>
+                <th scope="row">{{ sensor.label }}</th>
+                <td data-reading="grid.{{ key }}">{{ sensor.value }} {{ sensor.unit }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="col-lg-6">
+      <section class="placeholder-card">
+        <h2>Tanks, batteries, solar <span class="sim-flag">Simulated</span></h2>
+        <table class="table mb-0">
+          <tbody>
+            <tr><th scope="row">Home tank</th><td data-reading="tanks.home_percent">{{ state.tanks.home_percent }} %</td></tr>
+            <tr><th scope="row">Farm tank</th><td data-reading="tanks.farm_percent">{{ state.tanks.farm_percent }} %</td></tr>
+            <tr><th scope="row">Home battery</th><td data-reading="batteries.home_percent">{{ state.batteries.home_percent }} %</td></tr>
+            <tr><th scope="row">Farm battery</th><td data-reading="batteries.farm_percent">{{ state.batteries.farm_percent }} %</td></tr>
+            <tr><th scope="row">Home solar</th><td data-reading="solar.home_watts">{{ state.solar.home_watts }} W</td></tr>
+            <tr><th scope="row">Farm solar</th><td data-reading="solar.farm_watts">{{ state.solar.farm_watts }} W</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+    <div class="col-lg-6">
+      <section class="placeholder-card">
+        <h2>Pump and valves <span class="sim-flag">Simulated</span></h2>
+        <table class="table mb-0">
+          <tbody>
+            <tr><th scope="row">Farm pump</th><td data-reading="pump.farm">{{ state.pump.farm }}</td></tr>
+            <tr><th scope="row">Home valve</th><td data-reading="valves.home">{{ state.valves.home }}</td></tr>
+            <tr><th scope="row">Farm valve</th><td data-reading="valves.farm">{{ state.valves.farm }}</td></tr>
+            <tr><th scope="row">Soil moisture</th><td data-reading="soil">{{ state.soil_moisture }} %</td></tr>
+            <tr><th scope="row">Home water use</th><td data-reading="consumption.home_water_liters_per_hour">{{ state.consumption.home_water_liters_per_hour }} L/h</td></tr>
+            <tr><th scope="row">Home electricity</th><td data-reading="consumption.home_electricity_watts">{{ state.consumption.home_electricity_watts }} W</td></tr>
+          </tbody>
+        </table>
+      </section>
+    </div>
+  </div>
+  {{ state|json_script:"simulation-state" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/simulation.js' %}"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

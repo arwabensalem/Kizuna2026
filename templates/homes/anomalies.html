@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+
+{% block title %}Anomaly check · {{ home.name }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">This home</p>
+  <h1>Anomaly check</h1>
+  <p class="lead">{{ home.name }} is compared with its own baseline: residents, rooms and outdoor features, active appliances, saved readings, the hour, and the temperature. The cuts are ratios of that baseline, not one limit for every household. Saved readings are demo history, not a live meter archive.</p>
+  <p>
+    <span class="sim-flag">Household baseline</span>
+    <a class="ms-2" href="{% url 'homes:detail' home.pk %}">Back to {{ home.name }}</a>
+  </p>
+
+  <div class="row g-3 mb-4">
+    <div class="col-md-4">
+      <section class="placeholder-card h-100">
+        <h2>Water valve</h2>
+        <p class="metric-value mb-2">{% if home.water_valve_open %}Open{% else %}Closed{% endif %}</p>
+        <form method="post" action="{% url 'homes:anomaly_valve' home.pk %}">
+          {% csrf_token %}
+          {% if home.water_valve_open %}
+            <input type="hidden" name="valve" value="closed">
+            <button class="btn btn-outline-primary" type="submit">Close valve</button>
+          {% else %}
+            <input type="hidden" name="valve" value="open">
+            <button class="btn btn-outline-primary" type="submit">Open valve</button>
+          {% endif %}
+        </form>
+        <p class="mb-0 mt-2">A button here is your action. It is written in the log.</p>
+      </section>
+    </div>
+    <div class="col-md-8">
+      <section class="placeholder-card h-100">
+        <h2>Autopilot</h2>
+        <p>{% if home.autopilot_enabled %}Autopilot is on. A critical water leak closes the valve and the log records that close.{% else %}Autopilot is off. A critical water leak alerts you and leaves the valve where it is.{% endif %}</p>
+        <p><a href="{% url 'actuators:board' %}?home={{ home.pk }}">Assist, Smart, and Autopilot</a></p>
+        <form method="post" action="{% url 'homes:anomaly_autopilot' home.pk %}">
+          {% csrf_token %}
+          {% if home.autopilot_enabled %}
+            <button class="btn btn-outline-primary" type="submit" name="enabled" value="off">Turn autopilot off</button>
+          {% else %}
+            <button class="btn btn-primary" type="submit" name="enabled" value="on">Turn autopilot on</button>
+          {% endif %}
+        </form>
+      </section>
+    </div>
+  </div>
+
+  <section class="placeholder-card mb-4">
+    <h2>Check a reading</h2>
+    <p>Water appliances now draw {{ snapshot.water_liters_per_hour }} L/h and electrical appliances draw {{ snapshot.energy_watts }} W in the simulated snapshot. Edit the fields before checking.</p>
+    {% if errors %}
+      <div class="alert alert-danger">
+        {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+      </div>
+    {% endif %}
+    <form method="post" action="{% url 'homes:anomaly_check' home.pk %}">
+      {% csrf_token %}
+      <div class="row g-3">
+        <div class="col-md-4">
+          <label class="form-label" for="water">Water (L/h)</label>
+          <input class="form-control" id="water" name="water_liters_per_hour" type="number" min="0" max="5000" step="0.1" value="{{ posted.water_liters_per_hour|default:snapshot.water_liters_per_hour }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="energy">Energy (W)</label>
+          <input class="form-control" id="energy" name="energy_watts" type="number" min="0" max="50000" step="1" value="{{ posted.energy_watts|default:snapshot.energy_watts }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="temperature">Temperature (°C)</label>
+          <input class="form-control" id="temperature" name="temperature_c" type="number" min="-5" max="55" step="0.1" value="{{ posted.temperature_c|default:'26' }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="hour">Hour (0–23)</label>
+          <input class="form-control" id="hour" name="hour" type="number" min="0" max="23" step="1" value="{{ posted.hour|default:hour }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="tank-previous">Tank an hour ago (%)</label>
+          <input class="form-control" id="tank-previous" name="tank_previous_percent" type="number" min="0" max="100" step="0.1" value="{{ posted.tank_previous_percent|default:snapshot.tank_percent }}" required>
+        </div>
+        <div class="col-md-4">
+          <label class="form-label" for="tank">Tank now (%)</label>
+          <input class="form-control" id="tank" name="tank_percent" type="number" min="0" max="100" step="0.1" value="{{ posted.tank_percent|default:snapshot.tank_percent }}" required>
+        </div>
+      </div>
+      <button class="btn btn-primary mt-3" type="submit">Check this home</button>
+    </form>
+  </section>
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <h2>Events</h2>
+      {% if events %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Class</th>
+                <th>Severity</th>
+                <th>Rule confidence</th>
+                <th>Status</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for event in events %}
+                <tr>
+                  <td>{{ event.detected_at }}</td>
+                  <td>
+                    {{ event.get_type_display }}
+                    <div class="text-secondary">{{ event.get_resource_display }} · {{ event.get_source_display }}</div>
+                    <div>{{ event.summary }}</div>
+                  </td>
+                  <td>{{ event.get_severity_display }}</td>
+                  <td>{{ event.confidence }}</td>
+                  <td>
+                    {{ event.get_status_display }}
+                    {% if event.status == 'open' %}
+                      <form method="post" action="{% url 'homes:anomaly_acknowledge' home.pk event.pk %}">
+                        {% csrf_token %}
+                        <button class="btn btn-link btn-sm p-0" type="submit">Acknowledge</button>
+                      </form>
+                    {% endif %}
+                  </td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>No anomaly events yet. A normal check does not open an alert.</p>
+      {% endif %}
+    </div>
+    <div class="col-lg-6">
+      <h2>Automatic actions</h2>
+      {% if actions %}
+        <div class="table-responsive">
+          <table class="table align-middle">
+            <thead>
+              <tr>
+                <th>When</th>
+                <th>Action</th>
+                <th>Valve</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for action in actions %}
+                <tr>
+                  <td>{{ action.created_at }}</td>
+                  <td>
+                    {{ action.get_action_display }}
+                    <div class="text-secondary">{{ action.get_source_display }}</div>
+                    <div>{{ action.summary }}</div>
+                  </td>
+                  <td>{{ action.previous_state }} → {{ action.new_state }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </div>
+      {% else %}
+        <p>No automatic actions yet. The valve does not move unless a logged action says so.</p>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

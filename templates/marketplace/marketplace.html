@@ -1,0 +1,127 @@
+{% extends "base.html" %}
+
+{% block title %}{{ T.title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap mb-3" lang="{{ lang }}">
+    <div>
+      <p class="kicker">{{ T.kicker }}</p>
+      <h1 class="mb-1">{{ T.title }}</h1>
+      <p class="lead mb-0">{{ T.lead }}</p>
+    </div>
+    <div class="d-flex gap-2 flex-wrap">
+      <a class="btn btn-outline-primary" href="{% url 'market:offers' %}">{{ T.my_offers }}</a>
+      <a class="btn btn-outline-primary" href="{% url 'market:fair_price' %}">{{ T.calculator }}</a>
+      {% if can_list %}
+        <a class="btn btn-primary" href="{% url 'market:create' %}">+ Proposer une récolte</a>
+      {% endif %}
+    </div>
+  </div>
+
+  {% include "marketplace/_prefs.html" %}
+
+  <section class="bourse-hero" lang="{{ lang }}">
+    <div class="bourse-hero-text">
+      <p class="bourse-mission">{{ T.mission }}</p>
+      <p class="bourse-problem">{{ T.problem }}</p>
+      <p class="bourse-promise">{{ T.promise }}</p>
+    </div>
+    <div class="bourse-coins" aria-hidden="true">
+      <div class="bourse-coin-row">
+        <span class="bourse-coin-label">{{ T.chain_classic }}</span>
+        <div class="bourse-coin-bar"><span class="is-farmer" style="width:10%"></span><span class="is-middle" style="width:90%"></span></div>
+        <strong>~10 %</strong>
+      </div>
+      <div class="bourse-coin-row">
+        <span class="bourse-coin-label">{{ T.chain_direct }}</span>
+        <div class="bourse-coin-bar"><span class="is-farmer" style="width:{{ stats.share }}%"></span><span class="is-cost" style="width:{{ stats.cost }}%"></span></div>
+        <strong>{{ stats.share }} %</strong>
+      </div>
+    </div>
+  </section>
+
+  {% if negotiation_product %}
+    <section class="sim-cta mb-3">
+      <p><strong>💬 Chat direct traduit avec l'acheteur étranger.</strong> L'agriculteur écrit en tunisien, l'acheteur lit en japonais, et inversement.</p>
+      <a href="{% url 'market:simulation' negotiation_product.pk %}">Ouvrir le chat</a>
+    </section>
+  {% endif %}
+
+  <section class="bourse-stats" lang="{{ lang }}">
+    <div><strong>{{ stats.farmers }}</strong><span>{{ T.stat_farmers }}</span></div>
+    <div><strong>{{ stats.listings }}</strong><span>{{ T.stat_listings }}</span></div>
+    <div><strong>{{ stats.offers }}</strong><span>{{ T.stat_offers }}</span></div>
+    <div><strong>{{ stats.share }} %</strong><span>{{ T.stat_share }}</span></div>
+  </section>
+
+  <ol class="bourse-how" lang="{{ lang }}" aria-label="{{ T.how }}">
+    <li><span>1</span>{{ T.how_1 }}</li>
+    <li><span>2</span>{{ T.how_2 }}</li>
+    <li><span>3</span>{{ T.how_3 }}</li>
+  </ol>
+
+  <form class="market-filters" method="get" action="{% url 'market:board' %}" lang="{{ lang }}">
+    <label class="market-search">
+      <span class="visually-hidden">{{ T.search_btn }}</span>
+      <input class="form-control" type="search" name="q" value="{{ query }}" placeholder="{{ T.search }}">
+    </label>
+    <label>
+      <span class="visually-hidden">Catégorie</span>
+      <select class="form-select" name="category">
+        <option value="">{{ T.all_categories }}</option>
+        {% for value, label in categories %}
+          <option value="{{ value }}" {% if category == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span class="visually-hidden">Disponibilité</span>
+      <select class="form-select" name="availability">
+        <option value="">{{ T.all_availability }}</option>
+        {% for value, label in availabilities %}
+          <option value="{{ value }}" {% if availability == value %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label class="bourse-check">
+      <input class="form-check-input" type="checkbox" name="export" value="1" {% if export_only %}checked{% endif %}>
+      {{ T.export_only }}
+    </label>
+    <button class="btn btn-primary" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg> {{ T.search_btn }}</button>
+  </form>
+
+  <div class="row g-3" lang="{{ lang }}">
+    {% for product in products %}
+      <div class="col-md-6 col-lg-4">
+        <article class="market-card">
+          <div class="market-card-top">
+            <span class="market-category">{{ product.cat_label }}</span>
+            <span class="market-badge market-{{ product.availability }}">{{ product.avail_label }}</span>
+          </div>
+          <h2><a href="{% url 'market:detail' product.pk %}">{{ product.name }}</a></h2>
+          {% if product.price_text %}
+            <p class="bourse-price">{{ product.price_text }} <small>{{ T.per }} {{ product.unit_label }}</small></p>
+          {% endif %}
+          <p class="market-qty">{{ product.quantity }} {{ product.unit_label }}</p>
+          <p class="market-meta">{{ product.origin }} · {{ T.harvested }} {% if lang == "fr" %}{{ product.harvest_date|date:"j F Y" }}{% else %}{{ product.harvest_date|date:"Y-m-d" }}{% endif %}</p>
+          {% if product.cert_labels or product.export_ready %}
+            <p class="bourse-chips">
+              {% if product.export_ready %}<span class="bourse-chip is-export">✈ {{ T.export_ready }}</span>{% endif %}
+              {% for label in product.cert_labels %}<span class="bourse-chip">{{ label }}</span>{% endfor %}
+            </p>
+          {% endif %}
+          {% if product.share %}
+            <p class="bourse-share"><strong>{{ product.share }} %</strong> {{ T.farmer_gets }}</p>
+          {% endif %}
+          <p class="market-farmer d-flex justify-content-between">
+            <a href="{% url 'market:farmer' product.farmer.pk %}">{{ product.farmer.username }}</a>
+            <a href="{% url 'market:simulation' product.pk %}">💬 Négocier</a>
+          </p>
+        </article>
+      </div>
+    {% empty %}
+      <p class="text-muted">{{ T.no_result }}</p>
+    {% endfor %}
+  </div>
+  <p class="bourse-note mt-3">{{ T.rates_note }}</p>
+{% endblock %}

@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+
+{% block title %}Resource Passport · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Resource Passport</p>
+  <h1>One card for every node</h1>
+  <p class="lead">Homes, farms, and businesses. Each figure is a ratio of the shared simulation clock or of records saved on that site. A dash means the data does not contain that quantity.</p>
+  <p class="network-label" role="note">{{ label }}</p>
+  <p class="passport-period">{{ period }}</p>
+
+  <div class="passport-grid">
+    {% for card in passports %}
+      <article class="passport" aria-label="Passport for {{ card.name }}">
+        <div class="passport-spine">KIZUNA</div>
+        <p class="passport-stamp">Simulated</p>
+        <p class="passport-kicker">Resource passport · {{ card.kind }}</p>
+        <h2>{{ card.name }}</h2>
+        <p class="passport-place">{{ card.place }}</p>
+        <p class="passport-source">{{ card.source }} · {{ card.period }}</p>
+        <dl class="passport-metrics">
+          {% for metric in card.metrics %}
+            <div class="passport-metric">
+              <dt>{{ metric.label }}</dt>
+              <dd>
+                {% if metric.score is None %}
+                  <strong class="passport-blank">—</strong>
+                {% else %}
+                  <strong>{{ metric.score }}</strong>
+                {% endif %}
+                <span class="passport-track" aria-hidden="true">
+                  <i style="width: {% if metric.score is None %}0{% else %}{{ metric.score }}{% endif %}%"></i>
+                </span>
+              </dd>
+              <p>{{ metric.detail }}</p>
+              <p class="passport-rule">{{ metric.rule }}</p>
+            </div>
+          {% endfor %}
+        </dl>
+      </article>
+    {% endfor %}
+  </div>
+{% endblock %}

@@ -1,0 +1,95 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Resource Network · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Resource Network</p>
+  <h1>Water and energy, shared</h1>
+  <p class="lead">Homes, a farm, a workshop, solar, batteries, and tanks on one simulated neighbourhood. Each line is a flow in the current simulated hour. Dashed green lines are KIZUNA Exchange flows between sites.</p>
+  <p class="network-label" role="note">{{ label }}</p>
+
+  <div class="network-toolbar placeholder-card mb-3">
+    <div class="network-hour">
+      <button class="btn btn-sm btn-outline-secondary" id="net-prev" type="button" aria-label="Previous hour">‹</button>
+      <div>
+        <strong id="net-hour">Hour –</strong>
+        <span id="net-time"></span>
+      </div>
+      <button class="btn btn-sm btn-outline-secondary" id="net-next" type="button" aria-label="Next hour">›</button>
+      <button class="btn btn-sm btn-outline-secondary" id="net-live" type="button" aria-pressed="true">Live</button>
+    </div>
+    <div class="network-filters" role="group" aria-label="Resource">
+      <button class="network-filter active" type="button" data-resource="all">All</button>
+      <button class="network-filter" type="button" data-resource="water">Water</button>
+      <button class="network-filter" type="button" data-resource="energy">Energy</button>
+      <label class="network-check"><input type="checkbox" id="net-exchange"> Exchange only</label>
+    </div>
+    <button class="btn btn-primary btn-sm" id="net-advance" type="button">Advance 1 simulated hour</button>
+  </div>
+  <p class="text-danger" id="net-error" role="alert" hidden></p>
+
+  <div class="row g-4 mb-4">
+    <div class="col-lg-8">
+      <section class="network-stage" data-live="network">
+        <svg id="net-graph" viewBox="0 0 1000 580" role="img" aria-label="Resource network graph">
+          <g id="net-edges"></g>
+          <g id="net-particles"></g>
+          <g id="net-flow-labels"></g>
+          <g id="net-nodes"></g>
+        </svg>
+        <div class="network-legend">
+          <span><i class="network-dot network-dot-water"></i> Water (L)</span>
+          <span><i class="network-dot network-dot-energy"></i> Energy (Wh)</span>
+          <span><i class="network-line-exchange"></i> KIZUNA Exchange</span>
+          <span><i class="network-ring network-ring-ok"></i> OK</span>
+          <span><i class="network-ring network-ring-watch"></i> Watch</span>
+          <span><i class="network-ring network-ring-alert"></i> Alert</span>
+        </div>
+      </section>
+    </div>
+    <div class="col-lg-4 network-side">
+      <section class="placeholder-card mb-3" id="net-node" aria-live="polite">
+        <h2>Node status</h2>
+        <p class="text-muted mb-0">Select a node in the graph.</p>
+      </section>
+      <section class="placeholder-card">
+        <h2>This hour</h2>
+        <dl class="network-totals" id="net-totals"></dl>
+      </section>
+    </div>
+  </div>
+
+  <section class="placeholder-card mb-4">
+    <h2>Flows this hour</h2>
+    <div class="table-responsive">
+      <table class="table table-sm align-middle mb-0">
+        <thead>
+          <tr><th>Resource</th><th>Source</th><th>Destination</th><th class="text-end">Quantity</th><th>Type</th><th>Timestamp</th><th>Why</th></tr>
+        </thead>
+        <tbody id="net-flows"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="placeholder-card mb-4">
+    <h2>Exchange log</h2>
+    <p class="text-muted">KIZUNA Exchange flows over the last 12 simulated hours.</p>
+    <div class="table-responsive">
+      <table class="table table-sm mb-0">
+        <thead><tr><th>Timestamp</th><th>Resource</th><th>Source</th><th>Destination</th><th class="text-end">Quantity</th></tr></thead>
+        <tbody id="net-history"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <section class="placeholder-card mb-4">
+    <h2>Assumptions</h2>
+    <ul class="mb-0" id="net-assumptions"></ul>
+  </section>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/network.js' %}"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

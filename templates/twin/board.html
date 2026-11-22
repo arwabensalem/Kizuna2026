@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Maison 3D · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Jumeau numérique 3D</p>
+  <h1>Maison 3D vivante</h1>
+  <p>Le modèle 3D de ce foyer. Chaque pièce (chambre, salle de bain, cuisine et les autres pièces enregistrées) est construite à partir des données, avec ses meubles, ses lumières, la citerne, la batterie, les panneaux solaires et les flux d'eau et d'énergie. Ce n'est pas un bâtiment mesuré, ni un modèle figé.</p>
+  <p class="kz-help">Lancez un scénario avec les boutons <strong>Mode démo</strong> en haut à gauche de la scène : fuite d'eau, orage, coupure de courant, canicule, sécheresse ou crise combinée sur 24 h. Tout se joue en 3D, sans modifier vos données.</p>
+  {% if not homes %}
+    <section class="placeholder-card">
+      <h2>Aucune maison pour l'instant</h2>
+      <p class="mb-0">Ajoutez une maison, puis revenez ici pour la voir en 3D.</p>
+    </section>
+  {% else %}
+    <form class="row g-3 mb-4" method="get" action="{% url 'twin:board' %}">
+      <div class="col-md-6">
+        <label class="form-label" for="home-select">Maison</label>
+        <select class="form-select" id="home-select" name="home">
+          {% for item in homes %}
+            <option value="{{ item.pk }}" {% if home and item.pk == home.pk %}selected{% endif %}>{{ item.name }}</option>
+          {% endfor %}
+        </select>
+      </div>
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-primary" type="submit">Afficher</button>
+      </div>
+    </form>
+
+    <div
+      id="twin-root"
+      data-live="twin"
+      data-twin-root
+      data-state-url="/api/twin/homes/{{ home.pk }}/"
+    >
+      <div id="twin-stage" class="twin-stage" aria-label="Modèle 3D de cette maison"></div>
+      <dl class="twin-readout row g-3 mt-2" id="twin-readout">
+        <div class="col-6 col-md-4"><dt>Horloge partagée</dt><dd data-field="clock">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Vanne</dt><dd data-field="valve">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Pompe</dt><dd data-field="pump">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Citerne</dt><dd data-field="tank">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Batterie</dt><dd data-field="battery">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Solaire</dt><dd data-field="solar">…</dd></div>
+        <div class="col-6 col-md-4"><dt>Lumières</dt><dd data-field="lights">…</dd></div>
+        <div class="col-12"><dt>Flux</dt><dd data-field="flows">…</dd></div>
+      </dl>
+    </div>
+
+    <div class="row g-4 mt-2">
+      <div class="col-lg-6">
+        <h2>Appareils</h2>
+        <p>Allumer ou éteindre un appareil met à jour la maison, puis le jumeau 3D relit son état.</p>
+        {% for appliance in home.appliances.all %}
+          <form class="d-flex justify-content-between align-items-center mb-2" method="post" action="{% url 'homes:appliance_toggle' appliance.pk %}">
+            {% csrf_token %}
+            <input type="hidden" name="next" value="{% url 'twin:board' %}?home={{ home.pk }}">
+            <span>{{ appliance.display_name }} · {{ appliance.get_kind_display }}</span>
+            <button class="btn btn-outline-primary btn-sm" type="submit">{{ appliance.is_active|yesno:"Allumé,Éteint" }}</button>
+          </form>
+        {% empty %}
+          <p>Aucun appareil pour l'instant. Ajoutez-en depuis la page de la maison.</p>
+        {% endfor %}
+      </div>
+      <div class="col-lg-6">
+        <h2>Vanne d'eau</h2>
+        <p>La vanne de cette maison est {{ home.water_valve_open|yesno:"ouverte,fermée" }}. Chaque changement est enregistré, puis le jumeau met à jour les tuyaux.</p>
+        <form method="post" action="{% url 'homes:anomaly_valve' home.pk %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="{% url 'twin:board' %}?home={{ home.pk }}">
+          <input type="hidden" name="valve" value="{{ home.water_valve_open|yesno:"closed,open" }}">
+          <button class="btn btn-outline-primary" type="submit">
+            {{ home.water_valve_open|yesno:"Fermer la vanne,Ouvrir la vanne" }}
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script type="module" src="{% static 'js/twin.js' %}?v=demo2"></script>
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

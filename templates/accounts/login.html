@@ -1,0 +1,15 @@
+{% extends "accounts/_auth_layout.html" %}
+
+{% block title %}Connexion · KIZUNA{% endblock %}
+{% block auth_kicker %}Bon retour{% endblock %}
+{% block auth_title %}Me connecter{% endblock %}
+{% block auth_intro %}<p class="kz-auth-intro">Nom d’utilisateur, ou numéro de téléphone si vous êtes agriculteur.</p>{% endblock %}
+{% block auth_body %}
+  <form method="post" class="kz-auth-form" novalidate>
+    {% csrf_token %}
+    {% include "includes/fields.html" %}
+    {% if next %}<input type="hidden" name="next" value="{{ next }}">{% endif %}
+    <button class="btn btn-primary btn-lg w-100 kz-auth-submit" type="submit">Me connecter <svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg></button>
+  </form>
+  <p class="kz-auth-switch">Pas encore de compte ? <a href="{% url 'accounts:register' %}">Créer un compte</a></p>
+{% endblock %}

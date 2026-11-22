@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}{% if creating %}Nouveau compte{% else %}{{ target.username }}{% endif %} · Utilisateurs · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker"><a href="{% url 'accounts:users' %}">← Gestion des utilisateurs</a></p>
+  <h1>{% if creating %}Créer un compte{% else %}Modifier « {{ target.username }} »{% endif %}</h1>
+  {% if creating %}
+    <p class="lead">Un mot de passe provisoire est généré et affiché une seule fois : transmettez-le à la personne, elle le changera dans ses réglages.</p>
+  {% endif %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <form class="kz-card" method="post" novalidate>
+        {% csrf_token %}
+        {{ form.non_field_errors }}
+        {% for field in form %}
+          <div class="mb-3{% if field.field.widget.input_type == 'checkbox' %} form-check{% endif %}">
+            {% if field.field.widget.input_type == 'checkbox' %}
+              {{ field }} <label class="form-check-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {% else %}
+              <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+              {{ field }}
+            {% endif %}
+            {% if field.help_text %}<div class="form-text">{{ field.help_text }}</div>{% endif %}
+            {% for error in field.errors %}<div class="text-danger small">{{ error }}</div>{% endfor %}
+          </div>
+        {% endfor %}
+        <button class="btn btn-primary" type="submit">{% if creating %}Créer le compte{% else %}Enregistrer{% endif %}</button>
+      </form>
+    </div>
+    {% if not creating %}
+      <div class="col-lg-5">
+        <div class="kz-card">
+          <h2 class="h5">Mot de passe</h2>
+          <p>La personne a oublié son mot de passe ? Générez-en un provisoire.</p>
+          <form method="post" action="{% url 'accounts:user_reset_password' target.pk %}" data-confirm="Remplacer le mot de passe de « {{ target.username }} » par un mot de passe provisoire ?">
+            {% csrf_token %}
+            <button class="btn btn-outline-primary" type="submit">Nouveau mot de passe provisoire</button>
+          </form>
+          <p class="bourse-note mt-3 mb-0">Inscrit le {{ target.date_joined|date:"j M Y" }}{% if target.last_login %} · dernière connexion le {{ target.last_login|date:"j M Y" }}{% endif %}.</p>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endblock %}

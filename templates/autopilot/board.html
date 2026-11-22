@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% load static kizuna_fr %}
+
+{% block title %}Pilote automatique · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Autonomie</p>
+  <h1>Pilote automatique</h1>
+  <p class="kz-help"><svg class="kz-i" aria-hidden="true"><use href="#i-info"></use></svg><span>Choisissez combien KIZUNA agit tout seul. <strong>Assist</strong> vous prévient seulement. <strong>Smart</strong> fait les gestes de sécurité (fermer l'eau en cas de fuite). <strong>Autopilot</strong> gère aussi l'arrosage, le solaire et la batterie, pour les équipements que vous avez autorisés.</span></p>
+
+  <section class="placeholder-card mb-4" data-live="actuators">
+    <h2>En ce moment</h2>
+    <p>État de la pompe et des vannes d'eau dans la simulation.</p>
+    <p class="mb-1">Heure <span data-clock-hour>{{ clock.hour }}</span> · <span data-crisis>{{ clock.crisis_state|upper|fr }}</span></p>
+    <p class="mb-1">Pompe de la ferme : <strong data-reading="pump.farm">{{ clock.pump.farm }}</strong></p>
+    <p class="mb-1">Vanne d'eau de la maison : <strong data-reading="valves.home">{{ clock.valves.home }}</strong></p>
+    <p class="mb-0">Vanne d'eau de la ferme : <strong data-reading="valves.farm">{{ clock.valves.farm }}</strong></p>
+  </section>
+
+  {% if not home and not farm %}
+    <section class="placeholder-card">
+      <h2>Pas encore de maison ni de ferme</h2>
+      <p class="mb-0">Ajoutez une maison ou une ferme, puis revenez choisir un mode.</p>
+    </section>
+  {% else %}
+    <form class="row g-3 mb-4" method="get" action="{% url 'actuators:board' %}">
+      {% if homes %}
+        <div class="col-md-5">
+          <label class="form-label" for="home-select">Maison</label>
+          <select class="form-select" id="home-select" name="home">
+            <option value="">None</option>
+            {% for item in homes %}
+              <option value="{{ item.pk }}" {% if home and item.pk == home.pk %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      {% if farms %}
+        <div class="col-md-5">
+          <label class="form-label" for="farm-select">Ferme</label>
+          <select class="form-select" id="farm-select" name="farm">
+            <option value="">None</option>
+            {% for item in farms %}
+              <option value="{{ item.pk }}" {% if farm and item.pk == farm.pk %}selected{% endif %}>{{ item.name }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      {% endif %}
+      <div class="col-md-2 d-flex align-items-end">
+        <button class="btn btn-outline-primary" type="submit">Afficher</button>
+      </div>
+    </form>
+
+    <section class="placeholder-card mb-4">
+      <h2>Mode choisi : {{ mode|capfirst }}</h2>
+      <form method="post" action="{% url 'actuators:mode' %}">
+        {% csrf_token %}
+        {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+        {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="radio" name="mode" value="assist" {% if mode == "assist" %}checked{% endif %}>
+              Assist
+            </label>
+            <p class="mb-0">KIZUNA détecte et vous prévient. Il ne touche à rien.</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="radio" name="mode" value="smart" {% if mode == "smart" %}checked{% endif %}>
+              Smart
+            </label>
+            <p class="mb-0">Gestes de sécurité seulement : fermer l'eau en cas de grosse fuite, couper l'arrosage s'il pleut, éteindre les appareils non essentiels pendant une coupure.</p>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check">
+              <input class="form-check-input" type="radio" name="mode" value="autopilot" {% if mode == "autopilot" %}checked{% endif %}>
+              Autopilot
+            </label>
+            <p class="mb-0">Les gestes de sécurité, plus l'arrosage, le solaire et la batterie, pour les équipements autorisés.</p>
+          </div>
+        </div>
+        <button class="btn btn-primary mt-3" type="submit">Enregistrer le mode</button>
+      </form>
+    </section>
+
+    <h2>Équipements</h2>
+    <div class="row g-3 mb-4">
+      {% for actuator in actuators %}
+        <div class="col-md-6 col-lg-4">
+          <section class="placeholder-card h-100">
+            <h2>{{ actuator.get_kind_display }}</h2>
+            <p class="metric-value mb-2">{{ actuator.state }}</p>
+            <form method="post" action="{% url 'actuators:authorize' %}">
+              {% csrf_token %}
+              {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+              {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+              <input type="hidden" name="actuator" value="{{ actuator.pk }}">
+              <input type="hidden" name="authorized" value="{% if actuator.authorized %}off{% else %}on{% endif %}">
+              <button class="btn btn-outline-primary" type="submit">
+                {% if actuator.authorized %}Autorisé · retirer{% else %}Autoriser{% endif %}
+              </button>
+            </form>
+          </section>
+        </div>
+      {% endfor %}
+    </div>
+
+    <section class="placeholder-card mb-4">
+      <h2>Tester une situation</h2>
+      <p>Décrivez une situation et voyez ce que KIZUNA ferait.</p>
+      {% if errors %}
+        <div class="alert alert-danger">
+          {% for error in errors %}<div>{{ error }}</div>{% endfor %}
+        </div>
+      {% endif %}
+      <form method="post" action="{% url 'actuators:run' %}">
+        {% csrf_token %}
+        {% if home %}<input type="hidden" name="home" value="{{ home.pk }}">{% endif %}
+        {% if farm %}<input type="hidden" name="farm" value="{{ farm.pk }}">{% endif %}
+        <div class="row g-3">
+          <div class="col-md-4">
+            <label class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="critical_leak" {% if posted.critical_leak %}checked{% endif %}>
+              Grosse fuite d'eau
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="rain_expected" {% if posted.rain_expected %}checked{% endif %}>
+              Pluie prévue
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-check mt-4">
+              <input class="form-check-input" type="checkbox" name="grid_available" {% if posted.grid_available or not posted %}checked{% endif %}>
+              Électricité disponible
+            </label>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="crop-stress">Stress des cultures (0 à 100)</label>
+            <input class="form-control" id="crop-stress" name="crop_stress" type="number" min="0" max="100" step="1" value="{{ posted.crop_stress|default:'20' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="tank">Niveau du réservoir (%)</label>
+            <input class="form-control" id="tank" name="tank_percent" type="number" min="0" max="100" step="1" value="{{ posted.tank_percent|default:'70' }}" required>
+          </div>
+          <div class="col-md-4">
+            <label class="form-label" for="battery">Batterie (%)</label>
+            <input class="form-control" id="battery" name="battery_percent" type="number" min="0" max="100" step="1" value="{{ posted.battery_percent|default:'60' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="solar">Production solaire (W)</label>
+            <input class="form-control" id="solar" name="solar_watts" type="number" min="0" max="50000" step="1" value="{{ posted.solar_watts|default:'400' }}" required>
+          </div>
+          <div class="col-md-6">
+            <label class="form-label" for="essential">Appareils essentiels (W)</label>
+            <input class="form-control" id="essential" name="essential_watts" type="number" min="0" max="50000" step="1" value="{{ posted.essential_watts|default:'300' }}" required>
+          </div>
+        </div>
+        <button class="btn btn-primary mt-3" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-play"></use></svg> Tester</button>
+      </form>
+    </section>
+
+    {% if last_actions %}
+      <h2>Résultat du test</h2>
+      <div class="row g-3 mb-4">
+        {% for action in last_actions %}
+          <div class="col-lg-6">
+            <section class="placeholder-card h-100"{% if forloop.first %} id="latest-action"{% endif %}>
+              <p class="sim-flag">{{ action.get_mode_display }}</p>
+              <h2>{{ action.action }}</h2>
+              <p>{{ action.reason }}</p>
+              <p class="mb-1">Équipement : {{ action.actuator.get_kind_display }}</p>
+              <p class="mb-1">{{ action.previous_state }} → {{ action.new_state }}</p>
+              <p class="mb-0">{{ action.created_at }}</p>
+            </section>
+          </div>
+        {% endfor %}
+      </div>
+    {% endif %}
+
+    <h2>Historique des actions</h2>
+    {% if history %}
+      <div class="table-responsive">
+        <table class="table align-middle">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Mode</th>
+              <th>Action</th>
+              <th>Équipement</th>
+              <th>État</th>
+              <th>Raison</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for action in history %}
+              <tr>
+                <td>{{ action.created_at }}</td>
+                <td>{{ action.get_mode_display }}</td>
+                <td>{{ action.action }}</td>
+                <td>{{ action.actuator.get_kind_display }}</td>
+                <td>{{ action.previous_state }} → {{ action.new_state }}</td>
+                <td>{{ action.reason }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">Aucune action pour le moment.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/live.js' %}"></script>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Crisis Day · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">KIZUNA Crisis Day</p>
+  <h1>One local day</h1>
+  <p class="lead">10:00 to 20:00 on a fixed series. Press start and the same day plays every time. Nothing on this page calls a weather service or moves the shared clock.</p>
+  <p class="network-label" role="note">{{ day.label }}</p>
+
+  <div class="day-controls">
+    <button class="btn btn-primary" type="button" id="day-start-crisis">START CRISIS DAY</button>
+    <button class="btn btn-outline-primary" type="button" id="day-start">START</button>
+    <button class="btn btn-outline-secondary" type="button" id="day-pause">PAUSE</button>
+    <button class="btn btn-outline-secondary" type="button" id="day-reset">RESET</button>
+  </div>
+
+  <section class="day-stage" id="day-stage">
+    <p class="day-time" id="day-time">10:00</p>
+    <h2 id="day-title">NORMAL</h2>
+    <p class="day-note" id="day-note"></p>
+    <div class="day-grid">
+      <article>
+        <h3>Digital twin</h3>
+        <dl id="day-twin"></dl>
+      </article>
+      <article>
+        <h3>Resource flows</h3>
+        <ul class="day-flows" id="day-flows"></ul>
+      </article>
+      <article>
+        <h3>Crisis propagation</h3>
+        <ul class="day-prop" id="day-prop"></ul>
+      </article>
+      <article>
+        <h3>KIZUNA Brain</h3>
+        <ul class="day-brain" id="day-brain"></ul>
+      </article>
+    </div>
+    <div class="day-lower">
+      <article>
+        <h3>Autonomous actions</h3>
+        <ul id="day-actions"></ul>
+      </article>
+      <article>
+        <h3>Stress</h3>
+        <svg id="day-chart" viewBox="0 0 320 120" role="img" aria-label="Crop, water, and energy stress across the day"></svg>
+      </article>
+      <article>
+        <h3>Tunis this hour</h3>
+        <p class="day-score" id="day-tunis"></p>
+        <p class="day-note" id="day-tunis-note"></p>
+      </article>
+    </div>
+  </section>
+
+  <section class="day-end" id="day-end" hidden>
+    <p class="day-end-title" id="day-end-title"></p>
+    <dl class="day-end-metrics" id="day-end-metrics"></dl>
+  </section>
+  {{ day|json_script:"crisis-day-data" }}
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/crisis-day.js' %}"></script>
+{% endblock %}

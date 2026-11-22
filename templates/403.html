@@ -1,0 +1,14 @@
+{% extends "base.html" %}
+
+{% block title %}Page non disponible · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Accès</p>
+  <h1>Cette page n'est pas pour votre compte</h1>
+  <p class="lead">Votre compte ne permet pas d'ouvrir cette partie de KIZUNA. Ce n'est pas grave : revenez à votre tableau de bord.</p>
+  {% if user.is_authenticated %}
+    <a class="btn btn-primary btn-lg" href="{% url 'dashboard' %}">← Retour au tableau de bord</a>
+  {% else %}
+    <a class="btn btn-primary btn-lg" href="{% url 'accounts:login' %}">Me connecter</a>
+  {% endif %}
+{% endblock %}

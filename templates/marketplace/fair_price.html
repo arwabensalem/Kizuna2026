@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+
+{% block title %}{{ T.calculator }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-2 flex-wrap">
+    <p class="kicker mb-0"><a href="{% url 'market:board' %}">{{ T.back }}</a></p>
+    {% include "marketplace/_prefs.html" %}
+  </div>
+  <h1 class="mt-2" lang="{{ lang }}">{{ T.calculator }}</h1>
+  <p class="lead" lang="{{ lang }}">{{ T.problem }}</p>
+
+  <form class="market-filters bourse-calc" method="get">
+    <label>
+      <span class="form-label d-block">{{ T.farmgate }} (TND)</span>
+      <input class="form-control" type="number" name="price" min="0.01" step="0.01" value="{{ price }}">
+    </label>
+    <label>
+      <span class="form-label d-block">{{ T.all_categories }}</span>
+      <select class="form-select" name="category">
+        {% for value, label in categories %}
+          <option value="{{ value }}" {% if value == category %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span class="form-label d-block">{{ T.destination }}</span>
+      <select class="form-select" name="dest">
+        {% for code, label in destinations %}
+          <option value="{{ code }}" {% if code == route.code %}selected{% endif %}>{{ label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-primary align-self-end" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-arrow"></use></svg> OK</button>
+  </form>
+
+  <section class="bourse-stats" lang="{{ lang }}">
+    <div><strong>{{ direct.shelf_text }}</strong><span>{{ T.shelf_price }}</span></div>
+    <div><strong>{{ direct.landed_text }}</strong><span>{{ T.landed_price }}</span></div>
+    <div><strong>{{ direct.traditional_share }} %</strong><span>{{ T.farmer_share_label }} · {{ T.chain_classic }}</span></div>
+    <div class="is-win"><strong>{{ direct.farmer_share }} %</strong><span>{{ T.farmer_share_label }} · {{ T.chain_direct }}</span></div>
+  </section>
+
+  {% include "marketplace/_chain.html" %}
+
+  <section class="bourse-impact" lang="{{ lang }}">
+    <h2>{{ T.tonne_title }}</h2>
+    <dl class="bourse-tonne">
+      <div><dt>{{ T.tonne_shelf }}</dt><dd class="is-bad">{{ tonne_shelf }}</dd></div>
+      <div><dt>{{ T.tonne_direct }}</dt><dd>{{ tonne_direct }}</dd></div>
+      <div><dt>{{ T.tonne_double }}</dt><dd class="is-good">{{ tonne_double }}</dd></div>
+      <div><dt>{{ T.tonne_farmer }}</dt><dd class="is-good">{{ tonne_farmer_double }} <small>{{ T.tonne_instead }} {{ tonne_farmer }}</small></dd></div>
+    </dl>
+    <div class="bourse-prices">
+      {% for p in prices %}<span class="{% if p.code == cur %}is-on{% endif %}">{{ p.flag }} {{ p.text }}</span>{% endfor %}
+    </div>
+  </section>
+
+  {% include "marketplace/_logistics.html" %}
+  <p class="bourse-note mt-2">{{ T.rates_note }}</p>
+{% endblock %}

@@ -1,0 +1,329 @@
+{% extends "base.html" %}
+
+{% block title %}Chat traduit · {{ product.name }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker"><a href="{% url 'market:detail' product.pk %}">← {{ product.name }}</a></p>
+  <div class="d-flex justify-content-between align-items-end gap-3 flex-wrap">
+    <div>
+      <h1 class="mb-1">Chat direct, chacun dans sa langue</h1>
+      <p class="lead mb-0">Chacun écrit ou parle dans sa langue (tunisien, français, anglais, 日本語, Deutsch…). Chaque écran suit la langue de la personne et n'affiche qu'elle : KIZUNA traduit les deux sens.</p>
+    </div>
+    <span class="sim-badge {% if ai_on %}is-on{% endif %}" id="sim-badge">{% if ai_on %}Traduction IA · {{ model }}{% else %}Traduction désactivée{% endif %}</span>
+  </div>
+  {% if not ai_on %}<p class="alert alert-warning mt-2 mb-0">{{ no_key_error }}</p>{% endif %}
+  <p class="alert alert-danger mt-2 mb-0" id="sim-error" hidden></p>
+
+  <form class="market-filters sim-setup" method="get" id="sim-setup">
+    <label>
+      <span class="form-label d-block">Acheteur</span>
+      <select class="form-select" name="persona">
+        {% for code, p in personas.items %}
+          <option value="{{ code }}" {% if code == state.persona %}selected{% endif %}>{{ p.flag }} {{ p.name }} · {{ p.lang_label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <label>
+      <span class="form-label d-block">Langue de l'agriculteur</span>
+      <select class="form-select" name="farmer_lang">
+        {% for code, l in farmer_langs.items %}
+          <option value="{{ code }}" {% if code == state.farmer_lang %}selected{% endif %}>{{ l.label }}</option>
+        {% endfor %}
+      </select>
+    </label>
+    <button class="btn btn-outline-primary align-self-end" type="submit" name="new" value="1">Nouvelle conversation</button>
+  </form>
+
+  <div class="sim-grid" id="sim" data-url="{% url 'market:simulation_say' product.pk %}" data-farmer-lang="{{ state.farmer_lang }}" data-buyer-lang="{{ state.buyer_lang }}">
+    {% csrf_token %}
+    <section class="sim-phone" data-pane="farmer">
+      <header>
+        <strong>🇹🇳 {{ product.farmer.get_full_name|default:product.farmer.username }}</strong>
+        <span>Écran de l'agriculteur · {{ product.origin }} · <span id="sim-farmer-lang">{{ farmer_lang_label }}</span></span>
+      </header>
+      <ol class="sim-log" aria-live="polite"></ol>
+      <div class="sim-quick">
+        <button type="button" data-say="عسلامة! الزيت متاعي بيو ومعصور على البارد، جنيناه في نوفمبر.">عسلامة! الزيت متاعي بيو…</button>
+        <button type="button" data-say="3andi chhada bio w ta7lil mta3 labo. Nab3athlek el wra9.">3andi chhada bio…</button>
+        <button type="button" data-say="Essoum 16 dinar el litre, w nab3thou mel port mta3 Radès.">Essoum 16 dinar…</button>
+        <button type="button" data-say="باهي، موافق. يعيشك!">باهي، موافق</button>
+      </div>
+      <form class="sim-form" data-role="farmer">
+        <textarea class="form-control" rows="2" dir="auto" placeholder="Écrivez ou parlez en tunisien, français ou anglais…"></textarea>
+        <button class="btn btn-outline-primary sim-mic" type="button" title="Message vocal : appuyez pour parler, appuyez encore pour envoyer" aria-label="Enregistrer un message vocal">🎤</button>
+        <button class="btn btn-primary" type="submit">Envoyer</button>
+      </form>
+    </section>
+
+    <section class="sim-phone is-buyer" data-pane="buyer" lang="{{ state.buyer_lang }}">
+      <header>
+        <strong>{{ persona.flag }} {{ persona.name }}</strong>
+        <span>{{ persona.company }} · <span id="sim-buyer-lang">{{ buyer_lang_label }}</span></span>
+      </header>
+      <ol class="sim-log" aria-live="polite"></ol>
+      <form class="sim-form" data-role="buyer">
+        <textarea class="form-control" rows="2" dir="auto" placeholder="Écrivez ou parlez dans votre langue…"></textarea>
+        <button class="btn btn-outline-primary sim-mic" type="button" title="Message vocal : appuyez pour parler, appuyez encore pour envoyer" aria-label="Enregistrer un message vocal">🎤</button>
+        <button class="btn btn-primary" type="submit">Envoyer</button>
+      </form>
+    </section>
+  </div>
+
+  <div class="d-flex gap-2 flex-wrap mt-3">
+    <button class="btn btn-outline-primary" type="button" id="sim-reset">Effacer la conversation</button>
+    <label class="bourse-check"><input class="form-check-input" type="checkbox" id="sim-orig"> Montrer aussi le message original</label>
+    <label class="bourse-check"><input class="form-check-input" type="checkbox" id="sim-fr"> Ajouter la version française (pour le jury)</label>
+    <button class="btn btn-outline-secondary" type="button" id="sim-check" data-url="{% url 'market:ai_check' %}">Tester la traduction</button>
+    <span class="bourse-note align-self-center">Chat traduit v6 · 🎤 vocal : Chrome ou Edge recommandés</span>
+  </div>
+  <div class="mt-2" id="sim-check-result"></div>
+  {{ state.history|json_script:"sim-history" }}
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function () {
+  var root = document.getElementById("sim");
+  var url = root.dataset.url;
+  var csrf = root.querySelector("input[name=csrfmiddlewaretoken]").value;
+  var history = JSON.parse(document.getElementById("sim-history").textContent || "[]");
+  var showOrig = document.getElementById("sim-orig");
+  var showFr = document.getElementById("sim-fr");
+  var busy = false;
+  var farmerLang = root.dataset.farmerLang;
+  var buyerLang = root.dataset.buyerLang;
+  // Langue de reconnaissance vocale (ce que la personne dit) et de lecture (ce qu'elle entend).
+  var LISTEN = { derja: "ar-TN", derja_latin: "ar-TN", ar: "ar-TN", fr: "fr-FR", ja: "ja-JP", en: "en-GB", de: "de-DE", it: "it-IT", es: "es-ES", pl: "pl-PL" };
+  var SPEAK = { derja: "ar", derja_latin: "fr-FR", ar: "ar", fr: "fr-FR", ja: "ja-JP", en: "en-GB", de: "de-DE", it: "it-IT", es: "es-ES", pl: "pl-PL" };
+  function paneLang(pane) { return pane === "farmer" ? farmerLang : buyerLang; }
+
+  function el(tag, cls, text) {
+    var n = document.createElement(tag);
+    if (cls) { n.className = cls; }
+    if (text) { n.textContent = text; n.setAttribute("dir", "auto"); }
+    return n;
+  }
+
+  // Sur son propre écran on voit ce qu'on a écrit ; sur l'écran d'en face, seulement la traduction.
+  function speak(text, pane) {
+    if (!window.speechSynthesis || !text) { return; }
+    window.speechSynthesis.cancel();
+    var u = new SpeechSynthesisUtterance(text);
+    u.lang = SPEAK[paneLang(pane)] || "fr-FR";
+    window.speechSynthesis.speak(u);
+  }
+
+  function bubble(turn, pane) {
+    var mine = turn.role === pane;
+    var li = el("li", "sim-msg " + (mine ? "is-me" : "is-them"));
+    if (turn.audio) {
+      li.appendChild(el("p", "sim-voice-tag", mine ? "🎤 Votre message vocal" : "🎤 Message vocal (voix originale)"));
+      var player = document.createElement("audio");
+      player.controls = true; player.preload = "none"; player.src = turn.audio; player.className = "sim-audio";
+      li.appendChild(player);
+    }
+    if (turn.audio && !turn.original) {
+      li.appendChild(el("p", "sim-orig", "Pas de transcription (reconnaissance vocale indisponible) : écoutez la voix."));
+      return li;
+    }
+    if (!mine && !turn.error && turn.translated && window.speechSynthesis) {
+      var say = el("button", "sim-listen", "🔊 Écouter");
+      say.type = "button";
+      say.addEventListener("click", function () { speak(turn.translated, pane); });
+      li.appendChild(say);
+    }
+    if (mine) {
+      li.appendChild(el("p", "sim-main", turn.original));
+      if (turn.error) { li.appendChild(el("p", "sim-err", "⚠ Non traduit : " + turn.error)); }
+    } else if (turn.error) {
+      li.classList.add("is-error");
+      li.appendChild(el("p", "sim-err", "⚠ Message reçu, mais la traduction a échoué."));
+      li.appendChild(el("p", "sim-orig", turn.error));
+      if (showOrig.checked) { li.appendChild(el("p", "sim-orig", "Original : " + turn.original)); }
+    } else {
+      li.appendChild(el("p", "sim-main", turn.translated));
+      if (showOrig.checked) { li.appendChild(el("p", "sim-orig", "Original : " + turn.original)); }
+    }
+    if (showFr.checked && turn.fr) { li.appendChild(el("p", "sim-fr", "FR : " + turn.fr)); }
+    return li;
+  }
+
+  function render() {
+    root.querySelectorAll(".sim-phone").forEach(function (phone) {
+      var log = phone.querySelector(".sim-log");
+      log.innerHTML = "";
+      history.forEach(function (turn) { log.appendChild(bubble(turn, phone.dataset.pane)); });
+      log.scrollTop = log.scrollHeight;
+    });
+  }
+
+  function typing(on) {
+    root.querySelectorAll(".sim-log").forEach(function (log) {
+      var t = log.querySelector(".sim-typing");
+      if (on && !t) { t = el("li", "sim-typing", "traduction…"); log.appendChild(t); log.scrollTop = log.scrollHeight; }
+      if (!on && t) { t.remove(); }
+    });
+  }
+
+  function post(params) {
+    if (busy) { return; }
+    busy = true; typing(true);
+    var body = params instanceof FormData ? params : new URLSearchParams(params);
+    fetch(url, { method: "POST", headers: { "X-CSRFToken": csrf }, body: body, credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        if (data.source === "reset") { history = []; }
+        else if (data.added) { history = history.concat(data.added); }
+        var errorBox = document.getElementById("sim-error");
+        if (data.error) { errorBox.textContent = "Traduction impossible : " + data.error; errorBox.hidden = false; }
+        else if (data.added) { errorBox.hidden = true; }
+        if (data.farmer_lang) { farmerLang = data.farmer_lang; }
+        if (data.buyer_lang) {
+          buyerLang = data.buyer_lang;
+          var buyerPane = root.querySelector("[data-pane=buyer]");
+          if (buyerPane) { buyerPane.setAttribute("lang", buyerLang); }
+          document.getElementById("sim-buyer-lang").textContent = data.buyer_lang_label;
+        }
+        if (data.farmer_lang_label) {
+          document.getElementById("sim-farmer-lang").textContent = data.farmer_lang_label;
+          var select = document.querySelector("select[name=farmer_lang]");
+          if (select) { select.value = data.farmer_lang; }
+        }
+        var badge = document.getElementById("sim-badge");
+        if (data.error && badge) { badge.classList.remove("is-on"); badge.textContent = "Traduction en échec"; }
+        else if (data.added && badge) { badge.classList.add("is-on"); }
+        if (data.detail) { var w = el("p", "bourse-note text-danger", data.detail); root.after(w); setTimeout(function () { w.remove(); }, 5000); }
+        render();
+      })
+      .catch(function () {
+        var errorBox = document.getElementById("sim-error");
+        errorBox.textContent = "Envoi impossible : vérifiez que le serveur tourne."; errorBox.hidden = false;
+      })
+      .finally(function () { busy = false; typing(false); });
+  }
+
+  function send(role, text) { post({ role: role, text: text, fr: showFr.checked ? "1" : "0" }); }
+
+  root.querySelectorAll(".sim-form").forEach(function (form) {
+    var box = form.querySelector("textarea");
+    form.addEventListener("submit", function (e) {
+      e.preventDefault();
+      var text = box.value.trim();
+      if (!text || busy) { return; }
+      box.value = "";
+      send(form.dataset.role, text);
+    });
+    box.addEventListener("keydown", function (e) {
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); form.requestSubmit(); }
+    });
+  });
+  // Message vocal : on enregistre la voix (MediaRecorder) et, en même temps, le navigateur
+  // la transcrit (Web Speech API) dans la langue de l'écran. La transcription est traduite
+  // pour l'autre écran ; la voix originale est jointe au message.
+  var Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  function voiceButton(form) {
+    var mic = form.querySelector(".sim-mic");
+    var box = form.querySelector("textarea");
+    var role = form.dataset.role;
+    if (!mic) { return; }
+    if (!navigator.mediaDevices || !window.MediaRecorder) {
+      mic.disabled = true; mic.title = "Micro indisponible dans ce navigateur (utilisez Chrome ou Edge, sur localhost ou https).";
+      return;
+    }
+    var rec = null, recog = null, chunks = [], transcript = "", timer = null, started = 0, stream = null;
+    function label() {
+      var s = Math.round((Date.now() - started) / 1000);
+      mic.textContent = "⏹ " + Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
+    }
+    function stop() {
+      if (rec && rec.state !== "inactive") { rec.stop(); }
+      if (recog) { try { recog.stop(); } catch (e) {} }
+    }
+    mic.addEventListener("click", function () {
+      if (rec && rec.state === "recording") { stop(); return; }
+      if (busy) { return; }
+      navigator.mediaDevices.getUserMedia({ audio: true }).then(function (s) {
+        stream = s; chunks = []; transcript = "";
+        rec = new MediaRecorder(stream);
+        var pending = Recognition ? 2 : 1;
+        function done() {
+          pending -= 1;
+          if (pending > 0) { return; }
+          var type = (rec.mimeType || "audio/webm").split(";")[0];
+          var blob = new Blob(chunks, { type: type });
+          var data = new FormData();
+          data.append("role", role);
+          data.append("text", transcript.trim());
+          data.append("fr", showFr.checked ? "1" : "0");
+          data.append("audio", blob, "vocal." + (type.indexOf("mp4") >= 0 ? "m4a" : type.indexOf("ogg") >= 0 ? "ogg" : "webm"));
+          box.value = ""; box.placeholder = box.dataset.placeholder || box.placeholder;
+          if (blob.size > 0) { post(data); }
+        }
+        rec.ondataavailable = function (e) { if (e.data && e.data.size) { chunks.push(e.data); } };
+        rec.onstop = function () {
+          clearInterval(timer); mic.textContent = "🎤"; mic.classList.remove("is-recording");
+          stream.getTracks().forEach(function (t) { t.stop(); });
+          done();
+        };
+        if (Recognition) {
+          recog = new Recognition();
+          recog.lang = LISTEN[paneLang(role)] || "fr-FR";
+          recog.continuous = true; recog.interimResults = true;
+          recog.onresult = function (e) {
+            var finalText = "", interim = "";
+            for (var i = 0; i < e.results.length; i++) {
+              if (e.results[i].isFinal) { finalText += e.results[i][0].transcript + " "; }
+              else { interim += e.results[i][0].transcript; }
+            }
+            transcript = finalText;
+            box.value = (finalText + interim).trim();
+          };
+          recog.onerror = function () {};
+          recog.onend = function () { recog = null; done(); };
+          try { recog.start(); } catch (e) { pending -= 1; recog = null; }
+        }
+        rec.start();
+        started = Date.now(); label(); timer = setInterval(function () {
+          label();
+          if (Date.now() - started > 60000) { stop(); }
+        }, 500);
+        mic.classList.add("is-recording");
+        box.dataset.placeholder = box.placeholder; box.placeholder = "Parlez… appuyez sur ⏹ pour envoyer";
+      }).catch(function () {
+        var errorBox = document.getElementById("sim-error");
+        errorBox.textContent = "Micro refusé : autorisez le micro pour ce site dans le navigateur."; errorBox.hidden = false;
+      });
+    });
+  }
+  root.querySelectorAll(".sim-form").forEach(voiceButton);
+
+  root.querySelectorAll("[data-say]").forEach(function (b) {
+    b.addEventListener("click", function () { send("farmer", b.dataset.say); });
+  });
+  document.getElementById("sim-reset").addEventListener("click", function () { post({ reset: "1" }); });
+  document.getElementById("sim-check").addEventListener("click", function () {
+    var out = document.getElementById("sim-check-result");
+    out.textContent = "Test en cours… (peut prendre jusqu'à 1 minute)";
+    fetch(this.dataset.url, { credentials: "same-origin" })
+      .then(function (r) { return r.json(); })
+      .then(function (data) {
+        out.innerHTML = "";
+        var list = el("ul", "bourse-docs");
+        data.results.forEach(function (r) {
+          list.appendChild(el("li", r.ok ? "text-success" : "text-danger", (r.ok ? "✓ " : "✗ ") + r.model + " : " + r.detail));
+        });
+        out.appendChild(el("p", "mb-1", "Fournisseur : " + data.provider));
+        out.appendChild(list);
+      })
+      .catch(function () { out.textContent = "Le test n'a pas pu être lancé."; });
+  });
+  // Choisir un autre acheteur (ou une autre langue) s'applique tout de suite, sans bouton.
+  document.querySelectorAll("#sim-setup select").forEach(function (select) {
+    select.addEventListener("change", function () { select.form.submit(); });
+  });
+  showOrig.addEventListener("change", render);
+  showFr.addEventListener("change", render);
+  render();
+})();
+</script>
+{% endblock %}

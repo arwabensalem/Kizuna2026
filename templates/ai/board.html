@@ -1,0 +1,169 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}AI engine · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker">Synthetic demo models</p>
+  <h1>AI engine</h1>
+  <p class="lead">{{ label }} Validation metrics, when shown, were calculated on a held-out split of that same generated data. They are not a claim about real households or farms.</p>
+  <p><span class="sim-flag">Synthetic demo</span></p>
+
+  {% if not report %}
+    <section class="placeholder-card mb-4">
+      <p class="mb-0">No saved model yet. Train the demo set with <code>python manage.py train_models</code>.</p>
+    </section>
+  {% else %}
+    <section class="placeholder-card mb-4">
+      <p class="mb-1">Training set</p>
+      <p class="mb-0">{{ report.training_data }} · seed {{ report.seed }} · {{ report.rows }} generated rows · {{ report.validation_fraction }} held out for validation</p>
+    </section>
+  {% endif %}
+
+  <div class="row g-4">
+    <div class="col-lg-6">
+      <section class="placeholder-card h-100">
+        <h2>Water consumption <span class="sim-flag">Synthetic demo</span></h2>
+        {% include "ai/metrics.html" with task=tasks.0 %}
+        <form data-ai-form data-endpoint="/api/ai/water/" data-kind="quantity">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" for="water-residents">Residents</label>
+              <input class="form-control" id="water-residents" name="residents" type="number" min="1" max="20" step="1" value="3" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="water-temperature">Temperature (°C)</label>
+              <input class="form-control" id="water-temperature" name="temperature" type="number" min="-5" max="55" step="0.1" value="28" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="water-day">Day of week (0 Mon–6 Sun)</label>
+              <input class="form-control" id="water-day" name="day_of_week" type="number" min="0" max="6" step="1" value="1" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="water-history">Previous hour (L)</label>
+              <input class="form-control" id="water-history" name="historical_consumption" type="number" min="0" max="500" step="0.1" value="10" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="water-appliances">Water appliance draw (L/h)</label>
+              <input class="form-control" id="water-appliances" name="appliance_usage" type="number" min="0" max="200" step="0.1" value="4" required>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit">Predict water</button>
+          <p class="metric-value mt-3 mb-0" data-ai-result></p>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="placeholder-card h-100">
+        <h2>Energy consumption <span class="sim-flag">Synthetic demo</span></h2>
+        {% include "ai/metrics.html" with task=tasks.1 %}
+        <form data-ai-form data-endpoint="/api/ai/energy/" data-kind="quantity">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" for="energy-temperature">Temperature (°C)</label>
+              <input class="form-control" id="energy-temperature" name="temperature" type="number" min="-5" max="55" step="0.1" value="28" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="energy-load">Appliance load (W)</label>
+              <input class="form-control" id="energy-load" name="appliance_load" type="number" min="0" max="20000" step="1" value="800" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="energy-solar">Solar production (W)</label>
+              <input class="form-control" id="energy-solar" name="solar_production" type="number" min="0" max="20000" step="1" value="400" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="energy-hour">Hour (0–23)</label>
+              <input class="form-control" id="energy-hour" name="hour" type="number" min="0" max="23" step="1" value="18" required>
+            </div>
+            <div class="col-12">
+              <label class="form-label" for="energy-history">Previous hour (W)</label>
+              <input class="form-control" id="energy-history" name="historical_energy" type="number" min="0" max="20000" step="1" value="700" required>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit">Predict energy</button>
+          <p class="metric-value mt-3 mb-0" data-ai-result></p>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="placeholder-card h-100">
+        <h2>Farm water requirement <span class="sim-flag">Synthetic demo</span></h2>
+        {% include "ai/metrics.html" with task=tasks.2 %}
+        <form data-ai-form data-endpoint="/api/ai/farm-water/" data-kind="quantity">
+          {% csrf_token %}
+          {% include "ai/farm_fields.html" with prefix="farm-water" %}
+          <button class="btn btn-primary mt-3" type="submit">Predict farm water</button>
+          <p class="metric-value mt-3 mb-0" data-ai-result></p>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="placeholder-card h-100">
+        <h2>Soil and crop stress <span class="sim-flag">Synthetic demo</span></h2>
+        {% include "ai/metrics.html" with task=tasks.3 %}
+        <form data-ai-form data-endpoint="/api/ai/crop-stress/" data-kind="quantity">
+          {% csrf_token %}
+          {% include "ai/farm_fields.html" with prefix="stress" %}
+          <button class="btn btn-primary mt-3" type="submit">Predict stress</button>
+          <p class="metric-value mt-3 mb-0" data-ai-result></p>
+        </form>
+      </section>
+    </div>
+
+    <div class="col-lg-6">
+      <section class="placeholder-card h-100">
+        <h2>Anomaly detection <span class="sim-flag">Synthetic demo</span></h2>
+        {% include "ai/metrics.html" with task=tasks.4 %}
+        <form data-ai-form data-endpoint="/api/ai/anomaly/" data-kind="anomaly">
+          {% csrf_token %}
+          <div class="row g-2">
+            <div class="col-6">
+              <label class="form-label" for="anomaly-temperature">Temperature (°C)</label>
+              <input class="form-control" id="anomaly-temperature" name="temperature" type="number" min="-10" max="80" step="0.1" value="27" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-humidity">Humidity (%)</label>
+              <input class="form-control" id="anomaly-humidity" name="humidity" type="number" min="0" max="100" step="0.1" value="58" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-water">Water (L/h)</label>
+              <input class="form-control" id="anomaly-water" name="water_consumption" type="number" min="0" max="5000" step="0.1" value="14" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-energy">Electricity (W)</label>
+              <input class="form-control" id="anomaly-energy" name="electricity_consumption" type="number" min="0" max="50000" step="1" value="700" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-soil">Soil moisture (%)</label>
+              <input class="form-control" id="anomaly-soil" name="soil_moisture" type="number" min="0" max="100" step="0.1" value="46" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-rain">Rainfall (mm)</label>
+              <input class="form-control" id="anomaly-rain" name="rainfall" type="number" min="0" max="300" step="0.1" value="0" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-tank">Tank level (%)</label>
+              <input class="form-control" id="anomaly-tank" name="tank_level" type="number" min="0" max="100" step="0.1" value="70" required>
+            </div>
+            <div class="col-6">
+              <label class="form-label" for="anomaly-solar">Solar (W)</label>
+              <input class="form-control" id="anomaly-solar" name="solar_production" type="number" min="0" max="30000" step="1" value="1200" required>
+            </div>
+          </div>
+          <button class="btn btn-primary mt-3" type="submit">Score reading</button>
+          <p class="metric-value mt-3 mb-0" data-ai-result></p>
+        </form>
+      </section>
+    </div>
+  </div>
+  <p class="mt-3 mb-0 text-danger" id="ai-error" hidden></p>
+{% endblock %}
+
+{% block scripts %}
+  <script src="{% static 'js/ai.js' %}"></script>
+{% endblock %}

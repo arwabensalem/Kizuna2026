@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+{% load kizuna_fr %}
+
+{% block title %}{{ title }} · KIZUNA{% endblock %}
+
+{% block content %}
+  <div class="d-flex justify-content-between align-items-center gap-3 mb-4">
+    <div>
+      <p class="kicker">Ma ferme</p>
+      <h1 class="mb-0">{{ title }}</h1>
+    </div>
+    <a class="btn btn-primary" href="{{ add_url }}">+ Ajouter</a>
+  </div>
+  {% if rows %}
+    <div class="table-responsive">
+      <table class="table align-middle">
+        <thead>
+          <tr>
+            {% for heading in headings %}
+              <th>{{ heading }}</th>
+            {% endfor %}
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in rows %}
+            <tr>
+              {% for cell in row.cells %}
+                <td>{{ cell|fr_choice|fr }}</td>
+              {% endfor %}
+              <td><div class="kz-row-actions">
+                <a class="btn btn-sm btn-outline-primary" href="{{ row.edit_url }}">Modifier</a>
+                <form class="d-inline" method="post" action="{{ row.delete_url }}">
+                  {% csrf_token %}
+                  <button class="btn btn-sm btn-danger-soft" type="submit"><svg class="kz-i" aria-hidden="true"><use href="#i-trash"></use></svg> Supprimer</button>
+                </form></div>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    <p>{{ empty_note }}</p>
+  {% endif %}
+{% endblock %}

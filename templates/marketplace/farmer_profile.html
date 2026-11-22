@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load kizuna_fr %}
+
+{% block title %}{{ farmer.username }} · Vendre et échanger · KIZUNA{% endblock %}
+
+{% block content %}
+  <p class="kicker"><a href="{% url 'market:board' %}">← Vendre et échanger</a></p>
+  <h1>{{ farmer.username }}</h1>
+  <p class="lead">Profil de l'agriculteur et ses annonces.</p>
+
+  {% if farms %}
+    <h2 class="h5 mt-4">Fermes</h2>
+    <ul class="market-farms">
+      {% for farm in farms %}
+        <li>{{ farm.name }}{% if farm.location %} · {{ farm.location }}{% endif %} · {{ farm.get_crop_type_display|fr_choice }}</li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+
+  <h2 class="h5 mt-4">Annonces</h2>
+  <div class="row g-3">
+    {% for product in products %}
+      <div class="col-md-6 col-lg-4">
+        <article class="market-card">
+          <div class="market-card-top">
+            <span class="market-category">{{ product.get_category_display|fr_choice }}</span>
+            <span class="market-badge market-{{ product.availability }}">{{ product.get_availability_display|fr_choice }}</span>
+          </div>
+          <h2><a href="{% url 'market:detail' product.pk %}">{{ product.name }}</a></h2>
+          <p class="market-qty">{{ product.quantity }} {{ product.get_unit_display|fr_choice }}</p>
+          <p class="market-meta">{{ product.origin }} · récolté le {{ product.harvest_date|date:"j F Y" }}</p>
+        </article>
+      </div>
+    {% empty %}
+      <p class="text-muted">Aucune annonce pour le moment.</p>
+    {% endfor %}
+  </div>
+
+  {% if form %}
+    <section class="market-request mt-4">
+      <h2>Écrire à {{ farmer.username }}</h2>
+      <form method="post">
+        {% csrf_token %}
+        {% include "includes/fields.html" %}
+        <button class="btn btn-primary" type="submit">Envoyer le message</button>
+      </form>
+    </section>
+  {% endif %}
+
+  {% if is_self %}
+    <h2 class="h5 mt-4">Demandes reçues</h2>
+    {% if requests %}
+      <div class="table-responsive league-board">
+        <table class="table align-middle mb-0">
+          <thead>
+            <tr>
+              <th>Acheteur</th>
+              <th>Annonce</th>
+              <th>Quantité</th>
+              <th>Prix proposé</th>
+              <th>Destination</th>
+              <th>Message</th>
+              <th>État</th>
+              <th>Envoyée le</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in requests %}
+              <tr>
+                <td>{{ item.buyer.username }}</td>
+                <td>{% if item.product %}{{ item.product.name }}{% else %}—{% endif %}</td>
+                <td>{% if item.quantity %}{{ item.quantity }}{% if item.product %} {{ item.product.get_unit_display|fr_choice }}{% endif %}{% else %}—{% endif %}</td>
+                <td>{% if item.offer_price_tnd %}{{ item.offer_price_tnd }} TND{% else %}—{% endif %}</td>
+                <td>{{ item.destination_label|default:"—" }}</td>
+                <td>{{ item.message|default:"—" }}</td>
+                <td><a class="bourse-status is-{{ item.status }}" href="{% url 'market:offer' item.pk %}">{{ item.get_status_display }} →</a></td>
+                <td>{{ item.created_at|date:"j M Y, H:i" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    {% else %}
+      <p class="text-muted">Aucune demande pour le moment.</p>
+    {% endif %}
+  {% endif %}
+{% endblock %}
